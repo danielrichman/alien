@@ -1,0 +1,23 @@
+
+This is the code repository for the ALIEN Project:
+ALtitude Imaging Entering Near-space
+
+This flight computer will be launched by a team of GCSE students from Reading, 
+UK in a high altitude weather balloon payload to take pictures from 30km up.
+
+This project consists of
+  Daniel Richman <danieljonathanrichman@googlemail.com>
+  Simrun Basuita <simrunbasuita@googlemail.com>
+  Alex Breton 
+although Alex Breton will not be contributing any code
+
+More information is here:
+  http://wiki.ukhas.org.uk/projects:alien
+  http://alienproject.wordpress.com/
+
+All the code contained within this subversion repository is licensed under
+GPL version 3. Please see the COPYING file.
+
+All the code is Copyright (c) 2009: Daniel Richman (and/or) Simrun Basuita
+Please see individual files for more details.
+

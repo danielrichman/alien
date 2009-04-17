@@ -1,0 +1,13 @@
+.
+|-- alien1
+|   |-- arduino-168
+|   |   `-- Contains code for the Arduino ATMega168 flight computer
+|   |-- chase-pc
+|   |   `-- Contains code for the chase car/pc for alien1
+|   `-- Contains code for the first ALIEN flight; alien1
+|-- misc-c
+|   |-- Makefile - buils every .c file nativly
+|   `-- Contains random examples, proofs of concept and experiments in C
+`-- notes
+    `-- Contains random snippets and information
+
