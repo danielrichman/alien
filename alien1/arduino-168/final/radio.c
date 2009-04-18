@@ -84,7 +84,7 @@ ISR (TIMER1_COMPA_vect)
   }
 }
 
-int main(void)
+void radio_initialize()
 {
        /* Setup Radio Outputs */
   DDRD  |= _BV(DDD4);     /* Set portD, pin4 as an output.  */
@@ -102,8 +102,5 @@ int main(void)
   TCNT1   = 0;            /* Reset timer */
   TIMSK1 |= _BV(OCIE1A);  /* Enable Compare Match Interrupts */
   sei();                  /* Turn on interrupts */
-
-       /* Sleep */
-  for (;;) sleep_mode();
 }
 
