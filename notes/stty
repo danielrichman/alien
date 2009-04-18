@@ -1,0 +1,3 @@
+# Command to set up /dev/ttyUSB0's baudrate and some other stuff 
+stty -F /dev/ttyUSB0 cs8 115200 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts
+
