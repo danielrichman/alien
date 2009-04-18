@@ -15,25 +15,17 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <avr/sleep.h>
 #include <stdint.h>
+#include "hexdump.h"
 
 /* Prototypes */
 void gps_data_push();
 void gps_proc_byte(uint8_t c);
 void gps_next_field();
 int main(int argc, char **argv);
-
-/* TODO: PUT THIS IN A HEADER FILE ########################################## */
-/* FROM hexdump.c */
-#define num_to_char(number)   (number < 10 ?                           \
-                                      ('0' + number):                  \
-                                      (('A' - 10) + number) )
-#define first_four(byte)       (0x0F & byte)
-#define  last_four(byte)      ((0xF0 & byte) >> 4)
-/* TODO END ################################################################# */
 
 /* A list of fields and their index, starting from 1. The index goes up
  * every time a ',' or a '.' is encountered, and it also goes up to separate
@@ -332,52 +324,5 @@ void gps_next_field()
 void gps_data_push()
 {
   /* TODO DEBUG TODO */
-  uint32_t i;
-  uint8_t  flag_one, flag_two, flag_three, flag_four;
-
-  #define dumpb(data_name)                                   \
-       printf(#data_name ": ");                              \
-       for (i = 0; i < sizeof(gps_data.data_name); i++)      \
-         printf("%c", gps_data.data_name[i]);                \
-       printf("\n");                                         
-
-  dumpb(time)
-  dumpb(lat_d)
-  dumpb(lat_m)
-  dumpb(lat_s)
-  dumpb(lon_d)
-  dumpb(lon_m)
-  dumpb(lon_s)
-
-  flag_one   = '-';
-  flag_two   = '-';
-  flag_three = '-';
-  flag_four  = '-';
-
-  if (gps_data.flags & gps_cflag_north) flag_one = 'N';
-  if (gps_data.flags & gps_cflag_south) flag_two = 'S';
-
-  if (gps_data.flags & gps_cflag_east) flag_three = 'E';
-  if (gps_data.flags & gps_cflag_west) flag_four  = 'W';
-
-  printf("flags: %.1X %c%c%c%c\n", gps_data.flags, 
-                 flag_one, flag_two, flag_three, flag_four);
-
-  dumpb(satc)
-  dumpb(alt)
-  /* END DEBUG TODO */
 }
 
-int main(int argc, char **argv)
-{
-  uint8_t c;
-
-  c = getchar();
-  while (c > 0 && c < 128)
-  {
-    gps_proc_byte(c);
-    c = getchar();
-  }
-
-  return 0;
-}
