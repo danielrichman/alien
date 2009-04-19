@@ -125,6 +125,17 @@ ISR (USART_RX_vect)
       latest_data.system_location = gps_data;
       latest_data.message_status |= message_status_have_gps;
 
+      /* TODO: In order to send an sms, we must take over the UART. 
+       * The best time to do this is right now, as there is the biggest
+       * window for doing so. */
+      /* TODO: This suggestion only works if we get correct sentences.
+       * If gps has lost fix this will never happen - BAD. XXX
+       * We therefore must instead track when GPGGA sentences finish, THAT
+       * is the time to suggest sending a sms. */ 
+      /* if (want_to_send_an_sms)
+       *   suggest_sending_it_now()
+       */
+
       /* Reset, ready for the next sentence */
       gps_state = gps_state_null;
     }
@@ -304,9 +315,6 @@ void gps_next_field()
 
 void gps_init()
 {
-  /* TODO  (re)initialise the UART */
-  /* Disable TX, that will be connected to the phone */
-
   gps_state = gps_state_null;
 
   /* Setup for 8 bit charaters */

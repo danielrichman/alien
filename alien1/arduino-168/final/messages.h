@@ -101,11 +101,7 @@ extern payload_message    sms_data;  /* Sent very rarely */
 /* Prototypes */
 uint8_t messages_get_char(payload_message *data, uint8_t message_type);
 void messages_push();
-/* TODO More functions ;) */
-
-/* Macro */
-/* This function is only one line long, so why bother? */
-#define messages_init()  latest_data.message_status = message_status_stale
+void messages_init();
 
 #endif 
 

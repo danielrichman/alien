@@ -50,3 +50,9 @@ void messages_push()
   /* TODO Implement messages_push() */
 }
 
+/* Called on power up */
+void messages_init()
+{
+  latest_data.message_status = message_status_stale;
+}
+
