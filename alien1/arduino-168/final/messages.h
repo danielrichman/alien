@@ -67,7 +67,7 @@ typedef struct
   payload_state_data system_state;  /* Fully Hexdumped */
 
   uint8_t message_state;            /* This helps out the message.c */
-  uint8_t message_substate;         /* a get_char routines */
+  uint8_t message_substate;         /* get_char routines */
 } payload_message;
 
 /* Message Buffers; in order of freshness */

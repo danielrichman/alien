@@ -43,6 +43,9 @@ uint8_t messages_get_char(payload_message *data)
 {
   /* TODO Implement me */
   return '!';
+
+  /* Return 0 if there is nothing more to send:
+   * return 0; */
 }
 
 /* Initialises the Message Buffers */
