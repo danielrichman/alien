@@ -19,13 +19,10 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include <stdint.h>
-#include "hexdump.h"
 
-/* Prototypes */
-void gps_data_push();
-void gps_proc_byte(uint8_t c);
-void gps_next_field();
-int main(int argc, char **argv);
+#include "messages.h"
+#include "hexdump.h"
+#include "gps.h"
 
 /* A list of fields and their index, starting from 1. The index goes up
  * every time a ',' or a '.' is encountered, and it also goes up to separate
@@ -55,29 +52,10 @@ uint8_t *gps_storing_location;
 uint8_t gps_sentence_mask[gps_sentence_name_length] = 
                                         { 'G', 'P', 'G', 'G', 'A' };
 
-/* GPS data struct */
-#define gps_cflag_north  0x01
-#define gps_cflag_south  0x02
-#define gps_cflag_east   0x04
-#define gps_cflag_west   0x08
-
-typedef struct 
-{
-  uint8_t   time[6];
-  uint8_t  lat_d[2];  /* Latitude degrees */
-  uint8_t  lat_m[2];  /* Latitude minutes */
-  uint8_t  lat_s[4];  /* Latitude part-minutes; ie. data after '.' */
-  uint8_t  lon_d[3];  /* Same, for longitude */
-  uint8_t  lon_m[2];
-  uint8_t  lon_s[4];
-  uint8_t  flags;     /* Expresses if it's N/S and E/W; 4 LSB ONLY! */
-  uint8_t   satc[2];
-  uint8_t    alt[5];
-} gps_information;
-
 /* Working data location - while we're recieving it goes here. */
 gps_information gps_data;
 
+/* TODO: Put this on the correct ISR and have it read the UART register */
 void gps_proc_byte(uint8_t c)
 {
   uint8_t i, j;  /* General purpose temporary variables, used in the for loop
@@ -141,8 +119,9 @@ void gps_proc_byte(uint8_t c)
 
     if (gps_substate == 3)
     {
-      /* !!!! We've got valid data! woooot! */
-      gps_data_push();
+      /* GPS data updated, send it to the messages manager. */
+      /* The data will be taken from gps_data */
+      messages_gps_data_push();
 
       /* Reset, ready for the next sentence */
       gps_state = gps_state_null;
@@ -321,8 +300,11 @@ void gps_next_field()
   }
 }
 
-void gps_data_push()
+void gps_init()
 {
-  /* TODO DEBUG TODO */
+  /* TODO  (re)initialise the UART */
+  /* Disable TX, that will be connected to the phone */
+
+  gps_state = gps_state_null;
 }
 

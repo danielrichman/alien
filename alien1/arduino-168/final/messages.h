@@ -15,6 +15,9 @@
     see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef ALIEN1_MESSAGES_HEADER
+#define ALIEN1_MESSAGES_HEADER
+
 /* $$alien1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<LATITUDE DD.DDDDDD>,
  * <LONGITUDE DD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FLAGS_HEXDUMP>,
  * <PAYLOAD_STATE_DATA_HEXDUMP><NEWLINE> */
@@ -42,7 +45,7 @@ typedef struct
 /* Data string struct */
 #define payload_status_ascending   0x01
 #define payload_status_descending  0x02
-#define payload_status_landed      0x04   /* TODO ... etc. TODO */
+#define payload_status_landed      0x04   /* ... etc. TODO */
 
 typedef struct
 {
@@ -62,5 +65,22 @@ typedef struct
   gps_information system_location;  /* Is already in ASCII, except 
 				     * for the 'flags' field */
   payload_state_data system_state;  /* Fully Hexdumped */
+
+  uint8_t message_state;            /* This helps out the message.c */
+  uint8_t message_substate;         /* a get_char routines */
 } payload_message;
+
+/* Message Buffers; in order of freshness */
+extern payload_message   log_data;  /* Logged whenever we get a full update */
+extern payload_message radio_data;  /* Copied from log data whenever 
+                                     * the radio is ready */
+extern payload_message   sms_data;  /* Sent very rarely */
+
+/* Prototypes */
+uint8_t messages_get_char(payload_message *data);
+void messages_gps_data_push();      /* Called when GPS data is updated. */
+void messages_init();
+/* TODO More functions ;) */
+
+#endif 
 

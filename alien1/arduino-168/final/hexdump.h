@@ -15,6 +15,10 @@
     see <http://www.gnu.org/licenses/>.
 */
 
+/* The hexdump code is just macros. */
+#ifndef ALIEN1_HEXDUMP_HEADER
+#define ALIEN1_HEXDUMP_HEADER
+
 /* In order to conserve space, I will try not to use printf at all on the 
  * flight computer for alien1. However, some sort of hexdump 
  * byte-to-2hexadecimal is needed. This is a test implementation */
@@ -36,3 +40,4 @@
 #define hexdump_a(byte)  num_to_char( last_four(byte))
 #define hexdump_b(byte)  num_to_char(first_four(byte))
 
+#endif
