@@ -17,7 +17,6 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <avr/sleep.h>
 #include <stdint.h>
 
 #include "messages.h"
@@ -55,12 +54,15 @@ uint8_t gps_sentence_mask[gps_sentence_name_length] =
 /* Working data location - while we're recieving it goes here. */
 gps_information gps_data;
 
-/* TODO: Put this on the correct ISR and have it read the UART register */
-void gps_proc_byte(uint8_t c)
+ISR (USART_RX_vect)
 {
   uint8_t i, j;  /* General purpose temporary variables, used in the for loop
                     that clears gps_data and the checksum checks.
                     Should be optimised out. */
+  uint8_t c;     /* We store the char that we have just recieved here. */
+
+  /* Grab the character from the data register */
+  c = UDR0;
 
   /* We treat the $ as a reset pulse. This overrides the current state because
    * a) a $ isn't valid in any of our data fields
@@ -120,8 +122,8 @@ void gps_proc_byte(uint8_t c)
     if (gps_substate == 3)
     {
       /* GPS data updated, send it to the messages manager. */
-      /* The data will be taken from gps_data */
-      messages_gps_data_push();
+      latest_data.system_location = gps_data;
+      latest_data.message_status |= message_status_have_gps;
 
       /* Reset, ready for the next sentence */
       gps_state = gps_state_null;
@@ -306,5 +308,17 @@ void gps_init()
   /* Disable TX, that will be connected to the phone */
 
   gps_state = gps_state_null;
+
+  /* Setup for 8 bit charaters */
+  UCSR0C = ((_BV(UCSZ00)) | (_BV(UCSZ01)));
+
+  /* UBRR = F_CPU/(16 * baudrate) - 1 
+   *      = 16000000/16b - 1
+   *      = 1000000/b - 1
+   *      = 1000000/4800 - 1 = 207.3333 */
+  UBRR0 = 208;
+
+  /* Enable Recieve Interrupts and UART RX mode. Don't enable TX */
+  UCSR0B = ((_BV(RXCIE0)) | (_BV(RXEN0)));
 }
 

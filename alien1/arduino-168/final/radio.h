@@ -30,6 +30,7 @@ extern uint8_t radio_state;
 /* Prototypes */
 void radio_init();
 void radio_send();
+void radio_proc();
 
 #endif
 

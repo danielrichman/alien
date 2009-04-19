@@ -26,22 +26,16 @@
 #include "radio.h"
 
 /* $$alien1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<LATITUDE DD.DDDDDD>,
- * <LONGITUDE DD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FLAGS_HEXDUMP>,
- * <PAYLOAD_STATE_DATA_HEXDUMP><NEWLINE> */
+ * <LONGITUDE DD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FLAGS_HEXDUMP_4LSB>,
+ * <SYSTEM_STATE_DATA_HEXDUMP>,<PAYLOAD_MESSAGE_STATE_HEXDUMP_4LSB><NEWLINE> */
 
 /* Message Buffers: see messages.h for more info */
 payload_message latest_data, log_data, radio_data, sms_data;
 
-/* Called when there is new data in the extern gps_data */
-void messages_gps_data_push()
-{
-  /* TODO Implement me */
-}
-
 /* Gets the next character to send */
 uint8_t messages_get_char(payload_message *data, uint8_t message_type)
 {
-  /* TODO Implement me */
+  /* TODO Implement me: messages_get_char() */
   return '!';
 
   /* Return 0 if there is nothing more to send:
@@ -50,9 +44,9 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
    * send system_state. It's just not needed on the radio/SMS  */
 }
 
-/* Initialises the Message Buffers */
-void messages_init()
+/* Called every second, a signal to push the data onwards */
+void messages_push()
 {
-  /* TODO Implement me */
+  /* TODO Implement messages_push() */
 }
 

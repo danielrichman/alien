@@ -20,10 +20,12 @@
 #include <avr/sleep.h>
 #include <stdint.h>
 
-#include "messages.h"
-#include "hexdump.h"
 #include "gps.h"
+#include "hexdump.h"
+#include "messages.h"
 #include "radio.h"
+#include "temperature.h"
+#include "timer1.h"
 
 int main()
 {
@@ -32,6 +34,8 @@ int main()
   messages_init();
   radio_init();
   gps_init();
+  temperature_init();
+  timer1_init();
 
   /* Interrupts on */
   sei();

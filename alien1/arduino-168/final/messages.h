@@ -19,8 +19,8 @@
 #define ALIEN1_MESSAGES_HEADER
 
 /* $$alien1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<LATITUDE DD.DDDDDD>,
- * <LONGITUDE DD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FLAGS_HEXDUMP>,
- * <PAYLOAD_STATE_DATA_HEXDUMP><NEWLINE> */
+ * <LONGITUDE DD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FLAGS_HEXDUMP_4LSB>,
+ * <SYSTEM_STATE_DATA_HEXDUMP>,<PAYLOAD_MESSAGE_STATE_HEXDUMP_4LSB><NEWLINE> */
 
 /* GPS data struct */
 #define gps_cflag_north  0x01
@@ -63,6 +63,11 @@ typedef struct
 } payload_state_data;
 
 /* Message structure */
+#define message_status_stale        0x00   /* No bits set */
+#define message_status_have_gps     0x01
+#define message_status_have_temp    0x02
+#define message_status_have_all     0x03   /* have_gps | have_temp */
+
 typedef struct
 {
   uint16_t message_id;              /* <INCREMENTAL COUNTER ID>
@@ -74,8 +79,10 @@ typedef struct
   payload_state_data system_state;  /* Fully Hexdumped - only dump this in
                                      * the logs, not the radio or SMS */
 
-  uint8_t message_state;            /* This helps out the message.c */
-  uint8_t message_substate;         /* get_char routines */
+  uint8_t message_status;           /* How up-to-date the data is */
+
+  uint8_t message_send_state;       /* This helps out the message.c */
+  uint8_t message_send_substate;    /* get_char routines */
 } payload_message;
 
 /* Message Buffers; in order of freshness */
@@ -93,9 +100,12 @@ extern payload_message    sms_data;  /* Sent very rarely */
 
 /* Prototypes */
 uint8_t messages_get_char(payload_message *data, uint8_t message_type);
-void messages_gps_data_push();      /* Called when GPS data is updated. */
-void messages_init();
+void messages_push();
 /* TODO More functions ;) */
+
+/* Macro */
+/* This function is only one line long, so why bother? */
+#define messages_init()  latest_data.message_status = message_status_stale
 
 #endif 
 

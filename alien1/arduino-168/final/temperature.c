@@ -15,21 +15,29 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ALIEN1_GPS_HEADER
-#define ALIEN1_GPS_HEADER
-
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <avr/sleep.h>
 #include <stdint.h>
+
+#include "temperature.h"
 #include "messages.h"
+#include "hexdump.h"
+#include "gps.h"
+#include "radio.h"
 
-/* Prototypes */
-void gps_next_field();
-void gps_init();
+void temperature_retrieve_reading()
+{
+  /* TODO temperature_retrieve_reading() Retrieve the temperature */
+}
 
-/* GPS data struct is defined in messages.h */
+void temperature_request_reading()
+{
+  /* TODO temperature_request_conversion() Start taking a reading*/
+}
 
-/* Other things need access to this in order to take the data away, 
- * specifically messages.c and messages_gps_data_push()             */
-extern gps_information gps_data;
-
-#endif 
+void temperature_init()
+{
+  /* TODO Implement temperature_init() Initialise IO */
+}
 

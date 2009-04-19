@@ -15,21 +15,9 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ALIEN1_GPS_HEADER
-#define ALIEN1_GPS_HEADER
+#ifndef ALIEN1_TIMER1_HEADER
+#define ALIEN1_TIMER1_HEADER
 
-#include <stdint.h>
-#include "messages.h"
-
-/* Prototypes */
-void gps_next_field();
-void gps_init();
-
-/* GPS data struct is defined in messages.h */
-
-/* Other things need access to this in order to take the data away, 
- * specifically messages.c and messages_gps_data_push()             */
-extern gps_information gps_data;
+void timer1_init();
 
 #endif 
-
