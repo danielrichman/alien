@@ -30,7 +30,7 @@
  * <PAYLOAD_STATE_DATA_HEXDUMP><NEWLINE> */
 
 /* Message Buffers: see messages.h for more info */
-payload_message log_data, radio_data, sms_data;
+payload_message latest_data, log_data, radio_data, sms_data;
 
 /* Called when there is new data in the extern gps_data */
 void messages_gps_data_push()

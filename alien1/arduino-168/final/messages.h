@@ -79,10 +79,12 @@ typedef struct
 } payload_message;
 
 /* Message Buffers; in order of freshness */
-extern payload_message   log_data;  /* Logged whenever we get a full update */
-extern payload_message radio_data;  /* Copied from log data whenever 
-                                     * the radio is ready */
-extern payload_message   sms_data;  /* Sent very rarely */
+extern payload_message latest_data;  /* Where the next update is built & 
+                                      * kept until ready*/
+extern payload_message    log_data;  /* Logged whenever we get a full update */
+extern payload_message  radio_data;  /* Copied from log data whenever 
+                                      * the radio is ready */
+extern payload_message    sms_data;  /* Sent very rarely */
 
 /* message_types */
 #define message_type_log    0x00
