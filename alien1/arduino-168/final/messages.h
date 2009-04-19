@@ -42,6 +42,13 @@ typedef struct
   uint8_t    alt[5];
 } gps_information; 
 
+/* Temperature data struct */
+typedef struct
+{
+  uint16_t internal_temperature;
+  uint16_t external_temperature;
+} temperature_data;
+
 /* Data string struct */
 #define payload_status_ascending   0x01
 #define payload_status_descending  0x02
@@ -50,8 +57,6 @@ typedef struct
 typedef struct
 {
   uint16_t payload_status;       /* Flying, descending, shots/sec, etc. */
-  uint16_t internal_temperature;
-  uint16_t external_temperature;
   uint16_t photos_taken;
   uint16_t SMSes_sent;
   uint16_t data_lines_logged;
@@ -64,7 +69,10 @@ typedef struct
 				     * will rendered into ascii-base10 */
   gps_information system_location;  /* Is already in ASCII, except 
 				     * for the 'flags' field */
-  payload_state_data system_state;  /* Fully Hexdumped */
+  temperature_data system_temp;     /* Hexdump this */
+
+  payload_state_data system_state;  /* Fully Hexdumped - only dump this in
+                                     * the logs, not the radio or SMS */
 
   uint8_t message_state;            /* This helps out the message.c */
   uint8_t message_substate;         /* get_char routines */
@@ -76,8 +84,13 @@ extern payload_message radio_data;  /* Copied from log data whenever
                                      * the radio is ready */
 extern payload_message   sms_data;  /* Sent very rarely */
 
+/* message_types */
+#define message_type_log    0x00
+#define message_type_radio  0x04
+#define message_type_sms    0x08
+
 /* Prototypes */
-uint8_t messages_get_char(payload_message *data);
+uint8_t messages_get_char(payload_message *data, uint8_t message_type);
 void messages_gps_data_push();      /* Called when GPS data is updated. */
 void messages_init();
 /* TODO More functions ;) */

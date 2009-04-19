@@ -52,7 +52,7 @@ ISR (TIMER1_COMPA_vect)
   {
     RADIO_MARK;
 
-    radio_char = messages_get_char(&radio_data);
+    radio_char = messages_get_char(&radio_data, message_type_radio);
     if (radio_char != 0)
     {
       radio_state = radio_state_start_bit;
@@ -125,7 +125,7 @@ void radio_send()
     return;
   }
 
-  radio_char  = messages_get_char(&radio_data);
+  radio_char  = messages_get_char(&radio_data, message_type_radio);
   radio_state = radio_state_start_bit;
 
        /* Enable Timer1 */

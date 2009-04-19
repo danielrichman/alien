@@ -39,13 +39,15 @@ void messages_gps_data_push()
 }
 
 /* Gets the next character to send */
-uint8_t messages_get_char(payload_message *data)
+uint8_t messages_get_char(payload_message *data, uint8_t message_type)
 {
   /* TODO Implement me */
   return '!';
 
   /* Return 0 if there is nothing more to send:
    * return 0; */
+  /* Note: if (message_type == message_type_radio|sms) then DON'T
+   * send system_state. It's just not needed on the radio/SMS  */
 }
 
 /* Initialises the Message Buffers */
