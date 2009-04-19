@@ -37,9 +37,12 @@ alien1.hex.upload : alien1.hex
 	        -p atmega168 -P /dev/ttyUSB0 -c stk500v1 -b 19200 \
 	        -U flash:w:$<
 
-clean :
-	rm -f alien1.hex alien1.elf $(objects)
+clean : clean-objects
+	rm -f alien1.hex 
 
-.PHONY : clean
+clean-objects: 
+	rm -f alien1.elf $(objects)
+
+.PHONY : clean clean-objects
 .DEFAULT_GOAL := alien1.hex
 
