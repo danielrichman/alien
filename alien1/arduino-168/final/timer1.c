@@ -27,16 +27,25 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include <stdint.h>
+#include <stdlib.h>
 
-#include "temperature.h"
-#include "messages.h"
+#include "gps.h"  
 #include "hexdump.h"
-#include "gps.h"
-#include "radio.h"
+#include "messages.h"  
+#include "radio.h" 
+#include "sms.h"
+#include "temperature.h"  
 #include "timer1.h"
 
 #define FLASH_LED  PORTD ^= _BV(PD5)
 
+/* We use this to work out when it's the best window of opportunity to nick
+ * the UART to send SMS messages. gps.c resets it whenever it recieves a char,
+ * if we want to send an sms, we wait until it reaches about 10 before assuming
+ * that the UART is idle. We increment this 50times a second */
+uint8_t timer1_uart_idle_counter, timer1_want_to_send_sms;
+
+/* These divide the 50hz into seconds and minutes */
 uint8_t timer1_fifty_counter, timer1_second_counter;
 
 /* TODO: Perhaps some sort of watch dog? Check if one of the modules is 
@@ -58,6 +67,9 @@ ISR (TIMER1_COMPA_vect)
 
     /* Something to do each second: */
     messages_push();
+    latest_data.system_location.fix_age++;
+
+    /* Just to remind everyone that we're still alive */
     FLASH_LED;
 
     /* Increment the other counter */
@@ -76,6 +88,23 @@ ISR (TIMER1_COMPA_vect)
 
       /* Something to do every minute */
       temperature_retrieve_reading();
+
+      /* TODO: Add SMS want-to-send logic */
+      /* if (sms_is_good_idea && timer1_want_to_send_sms == 0)
+       *   timer1_want_to_send_sms = 1; */
+    }
+  }
+
+  if (timer1_want_to_send_sms == 1)
+  {
+    timer1_uart_idle_counter++;
+
+    if (timer1_uart_idle_counter == 12)
+    {
+      timer1_want_to_send_sms = 0;
+      timer1_uart_idle_counter = 0;
+
+      /* TODO: Add sms.c and function to take over the UART for sms sending! */
     }
   }
 }

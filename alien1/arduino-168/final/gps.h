@@ -15,10 +15,9 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ALIEN1_GPS_HEADER
-#define ALIEN1_GPS_HEADER
+#ifndef ALIEN_GPS_HEADER
+#define ALIEN_GPS_HEADER
 
-#include <stdint.h>
 #include "messages.h"
 
 /* Prototypes */

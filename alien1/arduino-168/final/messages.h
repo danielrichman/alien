@@ -15,12 +15,16 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ALIEN1_MESSAGES_HEADER
-#define ALIEN1_MESSAGES_HEADER
+#ifndef ALIEN_MESSAGES_HEADER
+#define ALIEN_MESSAGES_HEADER
 
-/* $$alien1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<LATITUDE DD.DDDDDD>,
- * <LONGITUDE DD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FLAGS_HEXDUMP_4LSB>,
- * <SYSTEM_STATE_DATA_HEXDUMP>,<PAYLOAD_MESSAGE_STATE_HEXDUMP_4LSB><NEWLINE> */
+#include <stdint.h>
+#include <stdlib.h>
+
+/* $$A1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<N-LATITUDE DD.DDDDDD>,
+ * <E-LONGITUDE DDD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FIX_AGE>,
+ * <SYSTEM_STATE_DATA_HEXDUMP>,<PAYLOAD_MSG_ST_HXDMP_4LSB>
+ * <NEWLINE> */
 
 /* GPS data struct */
 #define gps_cflag_north  0x01
@@ -32,14 +36,13 @@ typedef struct
 {
   uint8_t   time[6];
   uint8_t  lat_d[2];  /* Latitude degrees */
-  uint8_t  lat_m[2];  /* Latitude minutes */
-  uint8_t  lat_s[4];  /* Latitude part-minutes; ie. data after '.' */
+  uint8_t  lat_p[6];  /* Latitude decimal-degrees */
   uint8_t  lon_d[3];  /* Same, for longitude */
-  uint8_t  lon_m[2];
-  uint8_t  lon_s[4];
-  uint8_t  flags;     /* Expresses if it's N/S and E/W; 4 LSB ONLY! */
+  uint8_t  lon_p[6];
   uint8_t   satc[2];
   uint8_t    alt[5];
+  uint8_t  flags;     /* Expresses if it's N/S and E/W; 4 LSB ONLY! */
+  uint16_t fix_age;   /* How old the fix is, in seconds             */
 } gps_information; 
 
 /* Temperature data struct */
@@ -63,11 +66,6 @@ typedef struct
 } payload_state_data;
 
 /* Message structure */
-#define message_status_stale        0x00   /* No bits set */
-#define message_status_have_gps     0x01
-#define message_status_have_temp    0x02
-#define message_status_have_all     0x03   /* have_gps | have_temp */
-
 typedef struct
 {
   uint16_t message_id;              /* <INCREMENTAL COUNTER ID>
@@ -79,10 +77,9 @@ typedef struct
   payload_state_data system_state;  /* Fully Hexdumped - only dump this in
                                      * the logs, not the radio or SMS */
 
-  uint8_t message_status;           /* How up-to-date the data is */
-
-  uint8_t message_send_state;       /* This helps out the message.c */
-  uint8_t message_send_substate;    /* get_char routines */
+  uint8_t message_send_field;       /* These help out the message.c */
+  uint8_t message_send_fstate;      /* get_char routines */
+  uint8_t message_send_fsubstate;
 } payload_message;
 
 /* Message Buffers; in order of freshness */
@@ -101,7 +98,6 @@ extern payload_message    sms_data;  /* Sent very rarely */
 /* Prototypes */
 uint8_t messages_get_char(payload_message *data, uint8_t message_type);
 void messages_push();
-void messages_init();
 
 #endif 
 

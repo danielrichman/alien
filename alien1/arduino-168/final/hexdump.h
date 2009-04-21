@@ -16,8 +16,8 @@
 */
 
 /* The hexdump code is just macros. */
-#ifndef ALIEN1_HEXDUMP_HEADER
-#define ALIEN1_HEXDUMP_HEADER
+#ifndef ALIEN_HEXDUMP_HEADER
+#define ALIEN_HEXDUMP_HEADER
 
 /* In order to conserve space, I will try not to use printf at all on the 
  * flight computer for alien1. However, some sort of hexdump 

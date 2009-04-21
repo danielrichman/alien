@@ -15,11 +15,19 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ALIEN_TEMPERATURE_HEADER
-#define ALIEN_TEMPERATURE_HEADER
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <avr/sleep.h>
+#include <stdint.h>
+#include <stdlib.h>
 
-void temperature_retrieve_reading();
-void temperature_request_reading();
-void temperature_init();
+#include "gps.h"  
+#include "hexdump.h"
+#include "messages.h"  
+#include "radio.h" 
+#include "sms.h"
+#include "temperature.h"  
+#include "timer1.h"
 
-#endif 
+/* TODO: sms.c */
+

@@ -19,9 +19,15 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include <stdint.h>
+#include <stdlib.h>
 
-#include "radio.h"
-#include "messages.h"
+#include "gps.h"  
+#include "hexdump.h"
+#include "messages.h"  
+#include "radio.h" 
+#include "sms.h"
+#include "temperature.h"  
+#include "timer1.h"
 
 /* The radio will be on gpio 4 (high => mark:1.2V, low => space:1.0V). 
  * Potential Dividors with potentiometers will generate the 

@@ -15,8 +15,10 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ALIEN1_RADIO_HEADER
-#define ALIEN1_RADIO_HEADER
+#ifndef ALIEN_RADIO_HEADER
+#define ALIEN_RADIO_HEADER
+
+#include <stdint.h>
 
 #define radio_state_not_txing   0xFF
 #define radio_state_start_bit   0xDD

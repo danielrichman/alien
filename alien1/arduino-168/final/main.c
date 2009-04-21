@@ -19,19 +19,20 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include <stdint.h>
+#include <stdlib.h>
 
-#include "gps.h"
+#include "gps.h"  
 #include "hexdump.h"
-#include "messages.h"
-#include "radio.h"
-#include "temperature.h"
+#include "messages.h"  
+#include "radio.h" 
+#include "sms.h"
+#include "temperature.h"  
 #include "timer1.h"
 
 int main()
 {
   /* Setup everything (except SMS which competes with gps for 
    * the UART, is only enabled when it is needed */
-  messages_init();
   radio_init();
   gps_init();
   temperature_init();

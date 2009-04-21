@@ -15,11 +15,9 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ALIEN_TEMPERATURE_HEADER
-#define ALIEN_TEMPERATURE_HEADER
+#ifndef ALIEN_SMS_HEADER
+#define ALIEN_SMS_HEADER
 
-void temperature_retrieve_reading();
-void temperature_request_reading();
-void temperature_init();
+/* TODO: see sms.c */
 
 #endif 

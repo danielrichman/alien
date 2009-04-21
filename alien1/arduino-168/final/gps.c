@@ -17,11 +17,17 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <avr/sleep.h>
 #include <stdint.h>
+#include <stdlib.h>
 
-#include "messages.h"
+#include "gps.h"  
 #include "hexdump.h"
-#include "gps.h"
+#include "messages.h"  
+#include "radio.h" 
+#include "sms.h"
+#include "temperature.h"  
+#include "timer1.h"
 
 /* A list of fields and their index, starting from 1. The index goes up
  * every time a ',' or a '.' is encountered, and it also goes up to separate
@@ -30,12 +36,12 @@
 #define gps_state_sentence_name   1    /* Eg GPGGA */
 #define gps_state_time            2
 #define gps_state_lat_d           4
-#define gps_state_lat_m           5
-#define gps_state_lat_s           6
+#define gps_state_lat_p           5
+#define gps_state_lat_pp          6
 #define gps_state_lat_dir         7
 #define gps_state_lon_d           8
-#define gps_state_lon_m           9
-#define gps_state_lon_s           10
+#define gps_state_lon_p           9
+#define gps_state_lon_pp          10
 #define gps_state_lon_dir         11
 #define gps_state_satc            13
 #define gps_state_alt             16
@@ -43,7 +49,7 @@
 #define gps_state_checksum        21
 
 /* substate is used for counting through each uint8_t */
-uint8_t gps_state, gps_checksum, gps_substate, gps_storing_maxlen;
+uint8_t gps_state, gps_checksum, gps_substate, gps_storing_maxlen, gps_prem;
 uint8_t *gps_storing_location;
 
 /* GPGGA sentences provide fix data */
@@ -60,9 +66,13 @@ ISR (USART_RX_vect)
                     that clears gps_data and the checksum checks.
                     Should be optimised out. */
   uint8_t c;     /* We store the char that we have just recieved here. */
+  div_t divbuf;  /* Temporary divide result storage */
 
   /* Grab the character from the data register */
   c = UDR0;
+
+  /* Reset the idle counter */
+  timer1_uart_idle_counter = 0;
 
   /* We treat the $ as a reset pulse. This overrides the current state because
    * a) a $ isn't valid in any of our data fields
@@ -76,6 +86,7 @@ ISR (USART_RX_vect)
     gps_next_field();
 
     /* Reset the gps_data struct! Use c as a temp var */
+    /* This will also reset the fix_age variable      */
     for (i = 0; i < sizeof(gps_data); i++)
       ((uint8_t *) &gps_data)[i] = 0;
 
@@ -123,18 +134,7 @@ ISR (USART_RX_vect)
     {
       /* GPS data updated, send it to the messages manager. */
       latest_data.system_location = gps_data;
-      latest_data.message_status |= message_status_have_gps;
-
-      /* TODO: In order to send an sms, we must take over the UART. 
-       * The best time to do this is right now, as there is the biggest
-       * window for doing so. */
-      /* TODO: This suggestion only works if we get correct sentences.
-       * If gps has lost fix this will never happen - BAD. XXX
-       * We therefore must instead track when GPGGA sentences finish, THAT
-       * is the time to suggest sending a sms. */ 
-      /* if (want_to_send_an_sms)
-       *   suggest_sending_it_now()
-       */
+      /* The fix_age will have been overwritten with 0      */
 
       /* Reset, ready for the next sentence */
       gps_state = gps_state_null;
@@ -240,6 +240,52 @@ ISR (USART_RX_vect)
         }
 
         break;
+
+      case gps_state_lat_p:
+      case gps_state_lat_pp:
+      case gps_state_lon_p:
+      case gps_state_lon_pp:
+        /* Digit = c - '0'. Add it to the carry/remainder */
+        gps_prem += c - '0';
+
+        /* Now divide by six */
+        divbuf = div(gps_prem, 6);
+
+        if (gps_substate == 0)
+        {
+          if (divbuf.quot != 0)
+          {
+            /* If this is digit 0, and divbuf.quot != 0, something is wrong
+             * (there's more than 60 minutes !?) */
+            gps_state = gps_state_null;
+            return;
+          }
+        }
+        else
+        {
+          /* Quotient is the current output digit. Store it.
+           * Because we're also multiplying by ten 
+           * [ie. output = (lat_p / 6) * 10 ] to convert decimal minutes
+           * to decimal degrees, we store it in the previous char (ie, 
+           * shift decimal digits left is *10 ) */
+          gps_storing_location[gps_substate - 1] = '0' + divbuf.quot;
+        }
+
+        /* Remainder goes back into prem, multiplied by ten 
+         * (when we're on the next digit this one is 10 times bigger) */
+        gps_prem = divbuf.rem * 10;
+
+        if (gps_substate == 5)
+        {
+          /* We'll have finished recieving input by now, but we 
+           * still have a remainder and still have the last char
+           * to fill. Treat the last char as 0, so nothing to add to
+           * prem. Now we divide and just stuff the quotient in */
+          divbuf = div(gps_prem, 6);
+          gps_storing_location[5] = '0' + divbuf.quot;
+        }
+
+        break;
     }
   }
 
@@ -255,7 +301,7 @@ ISR (USART_RX_vect)
 
 void gps_next_field()
 {
-  /* Don't bother checking if its null, could be anything at null state */
+  /* Don't bother checking if it's null, could be anything at null state */
   if (gps_state            != gps_state_null   && 
       gps_storing_maxlen   != 0                &&
       gps_substate         != gps_storing_maxlen)
@@ -289,26 +335,50 @@ void gps_next_field()
       }
 
       break;
+
+    case gps_state_lat_p:
+    case gps_state_lat_pp:
+    case gps_state_lon_p:
+    case gps_state_lon_pp:
+      if (gps_substate != 6)
+      {
+        /* Field not filled, calculation not complete. */
+        gps_state = gps_state_null;
+        return;
+      }
+
+      break;
   }
 
   gps_state++;
   gps_substate = 0;
+
+  gps_storing_maxlen = 0;  /* Defaults to zero */
 
   /* Find out if it is a simple store or not */
   switch (gps_state)
   {
     gps_store_bytes(time)
     gps_store_bytes(lat_d)
-    gps_store_bytes(lat_m)
-    gps_store_bytes(lat_s)
     gps_store_bytes(lon_d)
-    gps_store_bytes(lon_m)
-    gps_store_bytes(lon_s)
     gps_store_bytes(satc)
     gps_store_bytes(alt)
 
-    default:
-      gps_storing_maxlen = 0;
+    /* lat_p and lon_p (and lat_pp and lon_pp) share the same special-
+     * processing code. We use the gps_storing_location as a way of choosing
+     * between lat and lon inside that shared code without big if statements.
+     * However, we do not enable simple store by gps_storing_maxlen */
+
+    case gps_state_lat_p:
+    case gps_state_lat_pp:
+      gps_storing_location = gps_data.lat_p;
+      gps_prem = 0;     /* This holds the remainder/carry for the next digit */
+      break;
+
+    case gps_state_lon_p:
+    case gps_state_lon_pp:
+      gps_storing_location = gps_data.lon_p;
+      gps_prem = 0;
       break;
   }
 }
