@@ -31,15 +31,9 @@ headers := $(wildcard *.h)
 $(ANM).elf : $(objects)
 	avr-gcc $(CFLAGS) -o $@ $(objects)
 
-$(ANM).map : $(objects)
-	avr-gcc $(CFLAGS) $(MAPFLAGS)$@ -o /dev/null $(objects)
-
-analyse-memory : $(ANM).map
-	@./analyse_memory $<
-
 $(ANM).hex : $(ANM).elf
 	avr-objcopy -O ihex $< $@
-	avr-size $@
+	avr-size $(ANM).elf $(ANM).hex
 
 $(ANM).hex.upload : $(ANM).hex
 	avrdude -V -F -C /etc/avrdude.conf \
@@ -47,7 +41,7 @@ $(ANM).hex.upload : $(ANM).hex
 	        -U flash:w:$<
 
 clean : clean-objects
-	rm -f $(ANM).hex $(ANM).map
+	rm -f $(ANM).hex
 
 clean-objects: 
 	rm -f $(ANM).elf $(objects)
