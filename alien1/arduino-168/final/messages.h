@@ -80,6 +80,7 @@ typedef struct
   uint8_t message_send_field;       /* These help out the message.c */
   uint8_t message_send_fstate;      /* get_char routines */
   uint8_t message_send_fsubstate;
+  uint8_t message_send_checksum;
 } payload_message;
 
 /* Message Buffers; in order of freshness */

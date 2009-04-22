@@ -47,8 +47,9 @@ payload_message latest_data, log_data, radio_data, sms_data;
 #define message_send_field_gpsfixage   6
 #define message_send_field_temperature 7
 #define message_send_field_sysdata     8   /* skip for radio/sms */
-#define message_send_field_nl          9
-#define message_send_field_end         10
+#define message_send_field_checksum    9
+#define message_send_field_nl          10
+#define message_send_field_end         11
 
 /* payload_message.message_send_fstate */
 #define message_send_fstate_gpstime_hh      0
@@ -112,17 +113,17 @@ uint16_t powten[5] = { 1, 10, 100, 1000, 10000 };
            {                                                                 \
              if (data->message_send_fstate == 0)                             \
              {                                                               \
-               j =  last_four( (ba(source))[data->message_send_fsubstate] ); \
+               c =  last_four( (ba(source))[data->message_send_fsubstate] ); \
                data->message_send_fstate = 1;                                \
              }                                                               \
              else                                                            \
              {                                                               \
-               j = first_four( (ba(source))[data->message_send_fsubstate] ); \
+               c = first_four( (ba(source))[data->message_send_fsubstate] ); \
                data->message_send_fstate = 0;                                \
                data->message_send_fsubstate++;                               \
              }                                                               \
                                                                              \
-             c = num_to_char(j);                                             \
+             c = num_to_char(c);                                             \
            }
 
 #define    field_copy(source)           field_copys((source), sizeof(source))
@@ -134,7 +135,7 @@ uint16_t powten[5] = { 1, 10, 100, 1000, 10000 };
 uint8_t messages_get_char(payload_message *data, uint8_t message_type)
 {
   uint8_t c, e;    /* Char to return, is it the end? */
-  uint8_t i, j;    /* Temporary variables */
+  uint8_t i;       /* Temporary variable */
   div_t divbuf;    /* Temporary divide result storage */
 
   /* Initialise to false */
@@ -278,6 +279,28 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
       data->message_send_field++;
       /* Don't break, move straight onto the next one... */
 
+    case message_send_field_checksum:
+      switch (data->message_send_fstate)
+      {
+        case 0:
+          c = '*';
+          data->message_send_fstate++;
+          break;
+
+        case 1:
+          c = hexdump_a(data->message_send_checksum);
+          data->message_send_fstate++;
+          break;
+
+        case 2:
+          c = hexdump_b(data->message_send_checksum);
+          data->message_send_field++;
+          data->message_send_fstate = 0;
+          break;
+      }
+
+      break;
+
     case message_send_field_nl:
       c = '\n';
       data->message_send_field++;
@@ -296,7 +319,19 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
 
   if (c == 0)
   {
-    c = '?';   /* Shouldn't == 0 if e != 1 */
+    /* This should never happen. It's kinda damage-limitation */
+    c = '!';   /* Shouldn't == 0 if e != 1 */
+  }
+
+  if (data->message_send_field < message_send_field_checksum &&
+      !(data->message_send_field == message_send_field_header &&
+        data->message_send_fsubstate < 2))
+  {
+    /* If: the current char is before the checksum (we don't wanna check the
+     * the * or the checksum itself) AND it's not the first two chars of 
+     * the header (we exclude the $$) then compute a NMEA-style xor-checksum */
+
+    data->message_send_checksum ^= c;
   }
 
   return c;
