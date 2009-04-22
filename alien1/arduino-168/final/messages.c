@@ -340,7 +340,6 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
 /* Called every second, a signal to push the data onwards */
 void messages_push()
 {
-  /* TODO Implement messages_push() */
   if (radio_state == radio_state_not_txing)
   {
     radio_data = latest_data;   /* Update the radio's copy */

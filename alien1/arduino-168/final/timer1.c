@@ -19,9 +19,9 @@
  * and each time it does interrupt radio_proc gets a call. Furthermore, every 
  * fifty interrupts ( = one second) the messages.c system gets a call, telling
  * it to distribute a message. Finally, every 60 seconds temperature.c gets
- * called, telling it to start reading temperature, and 5 seconds after the 
- * reading is taken. */
-/* Finally an LED on Arduino GPIO6 is flashed ;) */
+ * called, telling it to start reading temperature. Also, SMSes get distributed
+ * by the logic inside the 50hz routine */
+/* Also, a LED on Arduino GPIO5 is flashed ;) */
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -40,10 +40,11 @@
 #define FLASH_LED  PORTD ^= _BV(PD5)
 
 /* We use this to work out when it's the best window of opportunity to nick
- * the UART to send SMS messages. gps.c resets it whenever it recieves a char,
- * if we want to send an sms, we wait until it reaches about 10 before assuming
- * that the UART is idle. We increment this 50times a second */
-uint8_t timer1_uart_idle_counter, timer1_want_to_send_sms;
+ * the UART to send a SMS. gps.c zeros  it whenever it recieves a char,
+ * so if it reaches a high value we know that the UART is idle. 
+ * See note below */
+uint8_t timer1_uart_idle_counter;
+uint8_t timer1_want_to_send_sms, timer1_want_to_take_temp;
 
 /* These divide the 50hz into seconds and minutes */
 uint8_t timer1_fifty_counter, timer1_second_counter;
@@ -68,6 +69,7 @@ ISR (TIMER1_COMPA_vect)
     /* Something to do each second: */
     messages_push();
     latest_data.system_location.fix_age++;
+    latest_data.system_temp.temperature_age++;
 
     /* Just to remind everyone that we're still alive */
     FLASH_LED;
@@ -75,19 +77,17 @@ ISR (TIMER1_COMPA_vect)
     /* Increment the other counter */
     timer1_second_counter++;
 
-    if (timer1_second_counter == 55)
-    {
-      /* Five seconds before the deadline... */
-      temperature_request_reading();
-    }
-
     if (timer1_second_counter == 60)
     {
       /* Reached the end of the minute */
       timer1_second_counter = 0;
 
       /* Something to do every minute */
-      temperature_retrieve_reading();
+      if (temperature_step == temperature_step_reset_pulse)
+      {
+        /* If the temperature isn't busy (It shouldn't be!!!) */
+        timer1_want_to_take_temp = 1;
+      }
 
       /* TODO: Add SMS want-to-send logic */
       /* if (sms_is_good_idea && timer1_want_to_send_sms == 0)
@@ -95,13 +95,28 @@ ISR (TIMER1_COMPA_vect)
     }
   }
 
-  if (timer1_want_to_send_sms == 1)
+  /* Try to avoid other interrupts when taking temperature - start it at
+   * the end of a 50hz interrupt so it has the biggest chance possible
+   * on that score, and use the uart_idle counter to dodge the big
+   * gps interrupts. Also, try to avoid gps comms when sending smses. 
+   * Sending an sms should only take 1 50hz tick to complete, so 
+   * shan't interfere with much else. Just start it a fair distance
+   * from gps comms */
+  if (timer1_want_to_send_sms == 1 || timer1_want_to_take_temp == 1)
   {
     timer1_uart_idle_counter++;
 
-    if (timer1_uart_idle_counter == 12)
+    if (timer1_uart_idle_counter == 12 && timer1_want_to_take_temp == 1)
     {
-      timer1_want_to_send_sms = 0;
+      timer1_want_to_take_temp = 0;
+      timer1_uart_idle_counter = 0;
+
+      temperature_get();
+    }
+
+    if (timer1_uart_idle_counter == 30 && timer1_want_to_send_sms  == 1)
+    {
+      timer1_want_to_send_sms  = 0;
       timer1_uart_idle_counter = 0;
 
       /* TODO: Add sms.c and function to take over the UART for sms sending! */
