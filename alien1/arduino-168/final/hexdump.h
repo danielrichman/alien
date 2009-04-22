@@ -26,15 +26,15 @@
 /* Work out if it's 0-9 or A-F, then just add. If it's A-F we need to know 
  * how far it is past A; so we subtract 10. Then add to 'A'. Rearrange this
  * to ('A' - 10) + Byte, and GCC will simplify/pre-evaluate this to 55+byte */
-#define num_to_char(number)   (number < 10 ?                           \
-                                      ('0' + number):                  \
-                                      (('A' - 10) + number) )
+#define num_to_char(number)   ((number) < 10 ?                           \
+                                               ('0' + (number)) :        \
+                                               (('A' - 10) + (number)) )
 
 /* To select the 4 bits we do this */
-#define first_four(byte)       (0x0F & byte)
+#define first_four(byte)       (0x0F & (byte))
 
 /* Last four: Shift left to get to a number < 16 */
-#define  last_four(byte)      ((0xF0 & byte) >> 4)
+#define  last_four(byte)      ((0xF0 & (byte)) >> 4)
 
 /* The MSB goes first. */
 #define hexdump_a(byte)  num_to_char( last_four(byte))

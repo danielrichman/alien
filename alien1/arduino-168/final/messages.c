@@ -30,7 +30,7 @@
 #include "timer1.h"
 
 /* $$A1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<N-LATITUDE DD.DDDDDD>,
- * <E-LONGITUDE DDD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FIX_AGE>,
+ * <E-LONGITUDE DDD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FIX_AGE_HEXDUMP>,
  * <SYSTEM_STATE_DATA_HEXDUMP>,<PAYLOAD_MSG_ST_HXDMP_4LSB>
  * <NEWLINE> */
 
@@ -43,13 +43,12 @@ payload_message latest_data, log_data, radio_data, sms_data;
 #define message_send_field_gpstime     2
 #define message_send_field_gpslat      3
 #define message_send_field_gpslon      4
-#define message_send_field_gpsalt      5
-#define message_send_field_gpsflags    6
-#define message_send_field_gpsfixage   7
-#define message_send_field_temperature 8
-#define message_send_field_sysdata     9   /* skip for radio/sms */
-#define message_send_field_nl          10
-#define message_send_field_end         11
+#define message_send_field_gpsalt      5   /* Ukhas protocol finishes here */
+#define message_send_field_gpsfixage   6
+#define message_send_field_temperature 7
+#define message_send_field_sysdata     8   /* skip for radio/sms */
+#define message_send_field_nl          9
+#define message_send_field_end         10
 
 /* payload_message.message_send_fstate */
 #define message_send_fstate_gpstime_hh      0
@@ -70,7 +69,7 @@ uint8_t message_header[message_header_length] = { '$', '$', 'A', '1' };
 uint16_t powten[5] = { 1, 10, 100, 1000, 10000 };
 
 /* Utility macros */
-#define field_copy(source, length)                                           \
+#define field_copys(source, length)                                          \
            if (data->message_send_fsubstate == (length))                     \
            {                                                                 \
              c = ',';                                                        \
@@ -84,7 +83,7 @@ uint16_t powten[5] = { 1, 10, 100, 1000, 10000 };
              data->message_send_fsubstate++;                                 \
            }
 
-#define fstate_copy(source, length, delim)                                   \
+#define fstate_copys(source, length, delim)                                  \
            if (data->message_send_fsubstate == (length))                     \
            {                                                                 \
              c = delim;                                                      \
@@ -97,20 +96,55 @@ uint16_t powten[5] = { 1, 10, 100, 1000, 10000 };
              data->message_send_fsubstate++;                                 \
            }
 
+/* Casts anything like a struct to something we can hexdump/treat
+ * as byte-array */
+#define ba(source)  ( (uint8_t *) &source )
+
+#define field_hexdumps(source, length)                                       \
+           if (data->message_send_fsubstate == (length))                     \
+           {                                                                 \
+             c = ',';                                                        \
+             data->message_send_field++;                                     \
+             data->message_send_fstate = 0;                                  \
+             data->message_send_fsubstate = 0;                               \
+           }                                                                 \
+           else                                                              \
+           {                                                                 \
+             if (data->message_send_fstate == 0)                             \
+             {                                                               \
+               j =  last_four( (ba(source))[data->message_send_fsubstate] ); \
+               data->message_send_fstate = 1;                                \
+             }                                                               \
+             else                                                            \
+             {                                                               \
+               j = first_four( (ba(source))[data->message_send_fsubstate] ); \
+               data->message_send_fstate = 0;                                \
+               data->message_send_fsubstate++;                               \
+             }                                                               \
+                                                                             \
+             c = num_to_char(j);                                             \
+           }
+
+#define    field_copy(source)           field_copys((source), sizeof(source))
+#define   fstate_copy(source, delim)                                         \
+                              fstate_copys((source), sizeof(source), (delim))
+#define field_hexdump(source)        field_hexdumps((source), sizeof(source))
+
 /* Gets the next character to send */
 uint8_t messages_get_char(payload_message *data, uint8_t message_type)
 {
-  uint8_t c;     /* Char to return */
-  uint8_t i;     /* Temporary variables */
-  div_t divbuf;  /* Temporary divide result storage */
+  uint8_t c, e;    /* Char to return, is it the end? */
+  uint8_t i, j;    /* Temporary variables */
+  div_t divbuf;    /* Temporary divide result storage */
 
-  /* If we return 0 then it stops the message. */
+  /* Initialise to false */
+  e = 0;
   c = 0;
 
   switch (data->message_send_field)
   {
     case message_send_field_header:
-      field_copy(message_header, message_header_length)
+      field_copy(message_header)
       break;
 
     case message_send_field_inccnt:
@@ -158,13 +192,13 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
       switch (data->message_send_fstate)
       {
         case message_send_fstate_gpstime_hh:
-          fstate_copy(    data->system_location.time     , 2, ':')
+          fstate_copys(    data->system_location.time     , 2, ':')
           break;
         case message_send_fstate_gpstime_mm:
-          fstate_copy( &((data->system_location.time)[2]), 2, ':')
+          fstate_copys( &((data->system_location.time)[2]), 2, ':')
           break;
         case message_send_fstate_gpstime_ss:
-          field_copy(  &((data->system_location.time)[4]), 2)
+          field_copys(  &((data->system_location.time)[4]), 2)
           break;
       }
 
@@ -186,11 +220,11 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
           /* no break - move straight on */
 
         case message_send_fstate_gpslat_d:
-          fstate_copy(data->system_location.lat_d, 2, '.')
+          fstate_copy(data->system_location.lat_d, '.')
           break;
 
         case message_send_fstate_gpslat_p:
-          field_copy(data->system_location.lat_p, 6)
+          field_copy(data->system_location.lat_p)
           break;
       }
       break;
@@ -211,29 +245,83 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
           /* no break - move straight on */
 
         case message_send_fstate_gpslon_d:
-          fstate_copy(data->system_location.lat_d, 3, '.')
+          fstate_copy(data->system_location.lon_d, '.')
           break;
 
         case message_send_fstate_gpslon_p:
-          field_copy(data->system_location.lon_p, 6)
+          field_copy(data->system_location.lon_p)
           break;
       }
       break;
 
+    case message_send_field_gpsalt:
+      field_copy(data->system_location.alt);
+      break;
+
+    case message_send_field_gpsfixage:
+      field_hexdump(data->system_location.fix_age);
+      break;
+
+    case message_send_field_temperature:
+      field_hexdump(data->system_temp);
+      break;
+
+    case message_send_field_sysdata:
+      if (message_type == message_type_log)
+      {
+        field_hexdump(data->system_state);
+        break;
+      }
+
+      /* else: break isn't called, so runs onto here */
+      /* Skip this field when not writing to SD card log */
+      data->message_send_field++;
+      /* Don't break, move straight onto the next one... */
+
+    case message_send_field_nl:
+      c = '\n';
+      data->message_send_field++;
+      break;
+
+    case message_send_field_end:
+    default:
+      e = 1;  /* Tells parent function that it is the end of transmission */
+      break;
+  }
+
+  if (e == 1)
+  {
+    return 0;  /* Returning 0 ends the transmission */
+  }
+
+  if (c == 0)
+  {
+    c = '?';   /* Shouldn't == 0 if e != 1 */
   }
 
   return c;
-
-  /* Return 0 if there is nothing more to send:
-   * return 0; */
-  /* Note: if (message_type == message_type_radio|sms) then DON'T
-   * send system_state. It's just not needed on the radio/SMS  */
-  /* Note: data may be destroyed during the sending process. re-copy always */
 }
 
 /* Called every second, a signal to push the data onwards */
 void messages_push()
 {
   /* TODO Implement messages_push() */
+  if (radio_state == radio_state_not_txing)
+  {
+    radio_data = latest_data;   /* Update the radio's copy */
+    radio_send();               /* Go go go! */
+  }
+
+  if (/* TODO: if sms.c wants a message */0)
+  {
+    sms_data = latest_data;
+    /* TODO: initiate sending process */
+  }
+
+  if (/* log.c is ready for a message */0)
+  {
+    log_data = latest_data;
+    /* copy data */
+  }
 }
 

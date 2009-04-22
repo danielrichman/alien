@@ -18,6 +18,11 @@
 
 ANM = alien1
 
+avr_gcc = avr-gcc
+avr_objcopy = avr-objcopy
+avr_size = avr-size
+avrdude = avrdude
+
 CFLAGS   = -mmcu=atmega168 -DF_CPU=16000000 -Wall -pedantic -O2
 MAPFLAGS = -Wl,-Map,
 
@@ -26,19 +31,19 @@ objects := $(patsubst %.c,%.o,$(cfiles))
 headers := $(wildcard *.h)
 
 %.o : %.c $(headers)
-	avr-gcc -c $(CFLAGS) -o $@ $<
+	$(avr_gcc) -c $(CFLAGS) -o $@ $<
 
 $(ANM).elf : $(objects)
-	avr-gcc $(CFLAGS) -o $@ $(objects)
+	$(avr_gcc) $(CFLAGS) -o $@ $(objects)
 
 $(ANM).hex : $(ANM).elf
-	avr-objcopy -O ihex $< $@
-	avr-size $(ANM).elf $(ANM).hex
+	$(avr_objcopy) -O ihex $< $@
+	$(avr_size) --common $(objects) $(ANM).elf $(ANM).hex
 
 $(ANM).hex.upload : $(ANM).hex
-	avrdude -V -F -C /etc/avrdude.conf \
-	        -p atmega168 -P /dev/ttyUSB0 -c stk500v1 -b 19200 \
-	        -U flash:w:$<
+	$(avrdude) -V -F -C /etc/avrdude.conf \
+	           -p atmega168 -P /dev/ttyUSB0 -c stk500v1 -b 19200 \
+	           -U flash:w:$<
 
 clean : clean-objects
 	rm -f $(ANM).hex
