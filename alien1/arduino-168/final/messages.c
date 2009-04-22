@@ -315,13 +315,15 @@ void messages_push()
   if (/* TODO: if sms.c wants a message */0)
   {
     sms_data = latest_data;
+    latest_data.system_state.SMSes_sent++;
     /* TODO: initiate sending process */
   }
 
   if (/* log.c is ready for a message */0)
   {
     log_data = latest_data;
-    /* copy data */
+    latest_data.system_state.data_lines_logged++;
+    /* TODO: intiate logging process */
   }
 }
 

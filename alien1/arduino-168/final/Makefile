@@ -17,13 +17,15 @@
 #    see <http://www.gnu.org/licenses/>.
 
 ANM = alien1
+F_CPU = 16000000
+mmcu = atmega168
 
 avr_gcc = avr-gcc
 avr_objcopy = avr-objcopy
 avr_size = avr-size
 avrdude = avrdude
 
-CFLAGS   = -mmcu=atmega168 -DF_CPU=16000000 -Wall -pedantic -O2
+CFLAGS   = -mmcu=$(mmcu) -DF_CPU=$(F_CPU) -pipe -Wall -pedantic -O2
 MAPFLAGS = -Wl,-Map,
 
 cfiles  := $(wildcard *.c)
