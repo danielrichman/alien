@@ -83,7 +83,7 @@ ISR (TIMER1_COMPA_vect)
       timer1_second_counter = 0;
 
       /* Something to do every minute */
-      if (temperature_step == temperature_step_reset_pulse)
+      if (temperature_status == temperature_status_reset_pulse_l)
       {
         /* If the temperature isn't busy (It shouldn't be!!!) */
         timer1_want_to_take_temp = 1;
@@ -139,8 +139,8 @@ void timer1_init()
   TIMSK1 |= _BV(OCIE1A);
   /* TCCR1B: Clear timer on compare match    (Set bit WGM12) */
   TCCR1B |= _BV(WGM12);
-  /* TCCR1B: Prescaler to FCPU/256 & Enable  (Set bit CS02)  */
-  TCCR1B |= _BV(CS02);
+  /* TCCR1B: Prescaler to FCPU/256 & Enable  (Set bit CS12)  */
+  TCCR1B |= _BV(CS12);
 
   /* Setup the Flashing LED : Put PD5 as an Output (pin5)    */
   DDRD |= _BV(DDD5);

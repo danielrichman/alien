@@ -19,22 +19,24 @@
 #define ALIEN_TEMPERATURE_HEADER
 
 /* Global status variables & defines */
-#define temperature_step_reset_pulse        0
-#define temperature_step_presence_pulse     1
-#define temperature_step_skiprom_cmd        2
-#define temperature_step_convtemp_cmd       3
-#define temperature_step_convtemp           4
-#define temperature_step_reset_pulse2       5
-#define temperature_step_presence_pulse2    6
-#define temperature_step_readscratch_cmd    7
-#define temperature_step_readscratch        8
-#define temperature_step_end                9
+#define temperature_status_reset_pulse_l      0
+#define temperature_status_reset_pulse_h      1
+#define temperature_status_presence_pulse     2
+#define temperature_status_skiprom_cmd        3
+#define temperature_status_convtemp_cmd       4
+#define temperature_status_convtemp           5
+#define temperature_status_reset_pulse2_l     6
+#define temperature_status_reset_pulse2_h     7
+#define temperature_status_presence_pulse2    8
+#define temperature_status_readscratch_cmd    9
+#define temperature_status_readscratch        10
+#define temperature_status_end                11
 
-#define temperature_status_something        0   /* TODO */
-
-extern uint8_t temperature_step;
+extern uint8_t temperature_status;
 
 /* Prototypes */
+void temperature_writeb(uint8_t b);
+uint8_t temperature_read();
 void temperature_get();
 void temperature_init();
 

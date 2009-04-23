@@ -359,5 +359,7 @@ void messages_push()
     latest_data.system_state.data_lines_logged++;
     /* TODO: intiate logging process */
   }
+
+  latest_data.message_id++;
 }
 
