@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "camera.h"
 #include "gps.h"  
 #include "hexdump.h"
 #include "messages.h"  

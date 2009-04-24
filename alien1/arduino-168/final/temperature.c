@@ -18,10 +18,10 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
-#include <util/delay.h>
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "camera.h"
 #include "gps.h"  
 #include "hexdump.h"
 #include "messages.h"  
@@ -36,177 +36,339 @@
  * around with ROM and SELECT commands to talk to each sensor individually */
 /* External Temperature will be PD6, Internal Temperature will be PD7 */
 
-/* Note: Don't forget to set to LOW before putting as an input */
-#define TEMP_EXT_RELEASE  DDRD  &= ~(_BV(DDD6))   /* Set to input  */
-#define TEMP_EXT_PULLLOW  DDRD  |=   _BV(DDD6)    /* Set to output */
-#define TEMP_EXT_READ     PIND  &    _BV(PIND6)   /* Read bit 6    */
-
-#define TEMP_INT_RELEASE  DDRD  &= ~(_BV(DDD7))
-#define TEMP_INT_PULLLOW  DDRD  |=   _BV(DDD7)
-#define TEMP_INT_READ     PIND  &    _BV(PIND7)
-
-/* TODO: Write to latest_data.system_temp; don't forget .temperature_age */
-
 #define skiprom_cmd        0xCC
 #define convtemp_cmd       0x44
 #define readscratch_cmd    0xBE
 
-#define temperature_flags_ext_bad  0x01
-#define temperature_flags_int_bad  0x02
-
 #define temperature_ext_read       0x01
 #define temperature_int_read       0x02
 
-uint8_t temperature_status, temperature_substatus;
-uint8_t temperature_crc, temperature_flags, temperature_byte;
+#define temperature_flags_ext_ok          0x01
+#define temperature_flags_int_ok          0x02
 
+uint8_t  temperature_ext_crc, temperature_int_crc;
+uint8_t  temperature_flags, temperature_state;
 uint16_t temperature_external, temperature_internal;
 
-ISR (TIMER0_COMPA_vect)
-{
-  switch(temperature_status)
-  {
-    case temperature_status_reset_pulse_l:
-    case temperature_status_reset_pulse2_l:
-      TEMP_EXT_PULLLOW;
-      TEMP_INT_PULLLOW;
+#define temperature_external_lsb  (ba(temperature_external))
+#define temperature_external_msb  (ba(temperature_external) + 1)
+#define temperature_internal_lsb  (ba(temperature_internal))
+#define temperature_internal_msb  (ba(temperature_internal) + 1)
 
-      temperature_status++;
+#define TEMP_EXT_RELEASE  DDRD  &= ~(_BV(DDD6))   /* Set to input  */
+#define TEMP_EXT_PULLLOW  DDRD  |=   _BV(DDD6)    /* Set to output */
+#define TEMP_EXT_READ    (PIND  &    _BV(PIND6))  /* Read bit 6    */
 
-      OCR0A = 140;     /* 560us wait */
-      break;
+#define TEMP_INT_RELEASE  DDRD  &= ~(_BV(DDD7))
+#define TEMP_INT_PULLLOW  DDRD  |=   _BV(DDD7)
+#define TEMP_INT_READ    (PIND  &    _BV(PIND7))
 
-    case temperature_status_reset_pulse_h:
-    case temperature_status_reset_pulse2_h:
-      TEMP_EXT_RELEASE;
-      TEMP_INT_RELEASE;
+#define TEMP_EXT_OK   (temperature_flags & temperature_flags_ext_ok)
+#define TEMP_INT_OK   (temperature_flags & temperature_flags_int_ok)
 
-      temperature_status++;
+/* No point having this as a function */
+#define TEMP_CHECK_CARRYON                                                   \
+          if(!(temperature_flags & (temperature_flags_ext_ok |               \
+                                    temperature_flags_int_ok)))              \
+          {                                                                  \
+            temperature_state = temperature_state_want_to_get;               \
+            return;                                                          \
+          }
 
-      OCR0A = 25;      /* 100us wait */
-      break;
+/* Enable timer 0, but don't configure for CTC or interrupts.
+ * At FCPU/64 we can use this to perform long waits without leaving
+ * the interrupt. */
+#define TEMP_BUSYWAIT_SETUP_64    TCCR0B  = ((_BV(CS00)) | _BV(CS01))
+#define TEMP_BUSYWAIT_SETUP_1     TCCR0B  = ((_BV(CS00)))
+#define TEMP_BUSYWAIT_SETUP_STOP  TCCR0B  = 0;
 
-    case temperature_status_presence_pulse:
-    case temperature_status_presence_pulse2:
-      if (TEMP_INT_READ)
-      {
-        /* If it's high, then the sensor isn't there - fail! */
-        temperature_flags |= temperature_flags_int_bad;
-      }
-      if (TEMP_EXT_READ)
-      {
-        temperature_flags |= temperature_flags_ext_bad;
-      }
-
-      temperature_status++;
-
-      OCR0A = 60;     /* 240us wait (we've already gone 40us into the
-                       * presence pulse with the 100us wait above */
-      break;
-
-    case temperature_status_skiprom_cmd:
-      temperature_writeb(skiprom_cmd);
-      break;
-
-    case temperature_status_convtemp_cmd:
-      temperature_writeb(convtemp_cmd);
-      break;
-
-    case temperature_status_convtemp:
-
-      /* TODO: Wait ages. Drop back to timer1.c - can't wait here */
-
-      break;
-
-    case temperature_status_readscratch_cmd:
-      temperature_writeb(readscratch_cmd);
-      break;
-
-    case temperature_status_readscratch:
-      /* TODO temperature_status_readscratch */
-      break;
-
-    case temperature_status_end:
-      /* TODO temperature_status_end */
-      break;
-  }
-}
+#define TEMP_BUSYWAIT(n)      for (TCNT0 = 0; TCNT0 < (n);)
+#define TEMP_BUSYWAIT_1_us(n)    TEMP_BUSYWAIT((n) * 16)
+#define TEMP_BUSYWAIT_64_us(n)   TEMP_BUSYWAIT((n) / 4)
 
 /* Because the timing must be accurate for RW we don't leave the interrupt */
 
-void temperature_writeb(uint8_t b)
+void temperature_request()
 {
-  /* Select the required byte */
-  b &= _BV(temperature_substatus);
+  /* Reset some stuff */
+  temperature_flags    = temperature_flags_ext_ok | temperature_flags_int_ok;
+  temperature_ext_crc  = 0;
+  temperature_int_crc  = 0;
+  temperature_external = 0;
+  temperature_internal = 0;
 
-  /* If we are writing low then pull it down for the full 64us, 
-   * release and wait a tiny bit for it to be surely high.
-   * If we are writing high then pull it down for 4us then release,
-   * and wait out the rest of the 72us (72 - 4 = 68) */
+  /* RESET */
+  temperature_reset();
 
-  TEMP_EXT_PULLLOW;
-  TEMP_INT_PULLLOW;
+  /* Check if it's worth carrying on... */
+  TEMP_CHECK_CARRYON
 
-  if (b)  _delay_us(4);            /* Wait 4us    */
-  else    _delay_us(64);           /* Wait 64us   */
+  /* SKIPROM cmd */
+  temperature_writebyte(skiprom_cmd);
 
-  TEMP_EXT_RELEASE;
-  TEMP_INT_RELEASE;
+  /* CONV_T cmd */
+  temperature_writebyte(convtemp_cmd);
 
-  if (b)  _delay_us(68);           /* Wait out the rest of the slot */
-  else    _delay_us(8);            /* Wait 8us for it to come high  */
+  /* Return to timer1.c; it will bring control back here when a second has
+   * passed. */
+  temperature_state = temperature_state_requested;
+}
 
-  temperature_substatus++;
+void temperature_retrieve()
+{
+  uint8_t i, d;
 
-  if (temperature_substatus == 8)
+  /* CONV_T test */
+  d = temperature_readbit();
+
+  if (!(d & temperature_ext_read))
   {
-    temperature_status++;
-    temperature_substatus = 0;
+    /* If it hasn't completed it by now... gah! */
+    temperature_flags &= ~(temperature_flags_ext_ok);
+  }
+  if (!(d & temperature_int_read))
+  {
+    temperature_flags &= ~(temperature_flags_int_ok);
+  }
+
+  TEMP_CHECK_CARRYON
+
+  /* RESET */
+  temperature_reset();
+
+  TEMP_CHECK_CARRYON
+
+  /* SKIPROM cmd */
+  temperature_writebyte(skiprom_cmd);
+
+  /* READSCRATCH cmd */
+  temperature_writebyte(readscratch_cmd);
+
+  /* READSCRATCH readbytes */
+  /* Bytes 0 and 1 are temperature data in little endian (that's good),
+   * then the rest can be ignored (but automatically shifted into the CRC
+   * by readbyte). */
+  temperature_readbyte(temperature_external_lsb, temperature_internal_lsb);
+  temperature_readbyte(temperature_external_msb, temperature_internal_msb);
+
+  /* Read the remaining 7 bytes, CRC and discard */
+  for (i = 0; i < 7; i++)
+  {
+    temperature_readbyte(NULL, NULL);
+  }
+
+  /* SIGN_CHECK */
+  /* For some reason, all the bits in the most significan byte of the temp.
+   * should be the same. We use them to signal other things, like how good the 
+   * temperature is, so check that they actually are the all 0 or 1 */
+  if (TEMP_EXT_OK && *temperature_external_msb != 0x00 &&
+                     *temperature_external_msb != 0xFF)
+  {
+    temperature_flags &= ~(temperature_flags_ext_ok);
+  }
+  if (TEMP_INT_OK && *temperature_internal_msb != 0x00 &&
+                     *temperature_internal_msb != 0xFF)
+  {
+    temperature_flags &= ~(temperature_flags_int_ok);
+  }
+
+  TEMP_CHECK_CARRYON
+
+  /* CRC_CHECK */
+  /* The CRC is such that if you shift the last byte, the CRC byte, into the
+   * CRC register, then it should equal zero. */
+  if (temperature_ext_crc != 0)
+  {
+    temperature_flags &= ~(temperature_flags_ext_ok);
+  }
+  if (temperature_int_crc != 0)
+  {
+    temperature_flags &= ~(temperature_flags_int_ok);
+  }
+
+  TEMP_CHECK_CARRYON
+
+  /* BIT_CLEAR */
+  /* Clear the two most significant bits in temp_ba[1], so that we can use
+   * them to signal age or invalidness. */
+  *temperature_external_msb &= ~(temperature_ubits_age | 
+                                 temperature_ubits_err);
+  *temperature_internal_msb &= ~(temperature_ubits_age | 
+                                 temperature_ubits_err);
+
+  /* TEMP_SAVE */
+  if (TEMP_EXT_OK)
+  {
+    latest_data.system_temp.external_temperature  = temperature_external;
+  }
+  else
+  {
+    latest_data.system_temp.external_temperature |= temperature_ubits_err;
+  }
+
+  if (TEMP_INT_OK)
+  {
+    latest_data.system_temp.internal_temperature  = temperature_internal;
+  }
+  else
+  {
+    latest_data.system_temp.internal_temperature |= temperature_ubits_err;
+  }
+
+  /* Have we completed successfully? If not, don't set it and timer1.c
+   * will call us again quicker */
+  if (TEMP_EXT_OK && TEMP_INT_OK)
+  {
+    temperature_state = temperature_state_null;   /* Finished. */
   }
 }
 
-uint8_t temperature_read()
+void temperature_reset()
+{
+  /* RESET_PULSE part1 */
+  if (TEMP_EXT_OK) TEMP_EXT_PULLLOW;
+  if (TEMP_INT_OK) TEMP_INT_PULLLOW;
+
+  TEMP_BUSYWAIT_SETUP_64;
+  TEMP_BUSYWAIT_64_us(560);
+
+  /* RESET_PULSE part2 */
+  if (TEMP_EXT_OK) TEMP_EXT_RELEASE;
+  if (TEMP_INT_OK) TEMP_INT_RELEASE;
+
+  TEMP_BUSYWAIT_64_us(100);
+
+  /* PRESENCE_PULSE test */
+  if (TEMP_EXT_OK && TEMP_EXT_READ)
+  {
+    /* If it's high, then the sensor isn't there, or isn't working. */
+    temperature_flags &= ~(temperature_flags_ext_ok);
+  } 
+  if (TEMP_INT_OK && TEMP_INT_READ)
+  {
+    temperature_flags &= ~(temperature_flags_int_ok);
+  }
+
+  TEMP_BUSYWAIT_64_us(240);
+
+  TEMP_BUSYWAIT_SETUP_STOP;
+}
+
+void temperature_writebyte(uint8_t db)
+{
+  uint8_t i, b;
+
+  TEMP_BUSYWAIT_SETUP_64;
+
+  /* Shift left until we rollover to 0 */
+  for (i = 0x01; i != 0x00; i = i << 1)
+  {
+    /* Select the required bit */
+    b = db & i;
+
+    /* If we are writing low then pull it down for the full 64us, 
+     * release and wait a tiny bit for it to be surely high.
+     * If we are writing high then pull it down for 4us then release,
+     * and wait out the rest of the 72us (72 - 4 = 68) */
+
+    if (TEMP_EXT_OK)  TEMP_EXT_PULLLOW;
+    if (TEMP_INT_OK)  TEMP_INT_PULLLOW;
+
+    if (b)  TEMP_BUSYWAIT_64_us(4);            /* Wait 4us    */
+    else    TEMP_BUSYWAIT_64_us(64);           /* Wait 64us   */
+
+    if (TEMP_EXT_OK)  TEMP_EXT_RELEASE;
+    if (TEMP_INT_OK)  TEMP_INT_RELEASE;
+
+    if (b)  TEMP_BUSYWAIT_64_us(68);    /* Wait out the rest of the slot */
+    else    TEMP_BUSYWAIT_64_us(8);     /* Wait 8us for it to come high  */
+  }
+
+  TEMP_BUSYWAIT_SETUP_STOP;
+}
+
+void temperature_readbyte(uint8_t *ext_target, uint8_t *int_target)
+{
+  uint8_t i, d;
+
+  for (i = 0x01; i != 0x00; i = i << 1)
+  {
+    d = temperature_readbit();
+
+    if (TEMP_EXT_OK) 
+    {
+      temperature_crcpush(d & temperature_ext_read, &temperature_ext_crc);
+
+      if ((d & temperature_ext_read) && ext_target != NULL)
+      {
+        *ext_target |= i;
+      }
+    }
+
+    if (TEMP_INT_OK)
+    {
+      temperature_crcpush(d & temperature_int_read, &temperature_int_crc);
+
+      if ((d & temperature_int_read) && int_target != NULL)
+      {
+        *int_target |= i;
+      }
+    }
+  }
+}
+
+uint8_t temperature_readbit()
 {
   uint8_t d;
 
   d = 0;   /* Initialise */
 
-  TEMP_EXT_PULLLOW;
-  TEMP_INT_PULLLOW;
+  TEMP_BUSYWAIT_SETUP_1;
 
-  _delay_us(1.5);                          /* Wait 1.5us */
+  if (TEMP_EXT_OK)  TEMP_EXT_PULLLOW;
+  if (TEMP_INT_OK)  TEMP_INT_PULLLOW;
 
-  TEMP_EXT_RELEASE;
-  TEMP_INT_RELEASE;
+  TEMP_BUSYWAIT(24)                        /* Wait 1.5us */
 
-  _delay_us(12);                           /* Wait 12us  */
+  if (TEMP_EXT_OK)  TEMP_EXT_RELEASE;
+  if (TEMP_INT_OK)  TEMP_INT_RELEASE;
+
+  TEMP_BUSYWAIT_1_us(12)                   /* Wait 12us  */
 
   /* Read */
-  if (TEMP_EXT_READ)     d |= temperature_ext_read;
-  if (TEMP_INT_READ)     d |= temperature_int_read;
+  if (TEMP_EXT_OK && TEMP_EXT_READ)     d |= temperature_ext_read;
+  if (TEMP_INT_OK && TEMP_INT_READ)     d |= temperature_int_read;
 
   /* Wait for the slot to end: Wait another 52us */
-  _delay_us(52);
+
+  TEMP_BUSYWAIT_SETUP_64;
+  TEMP_BUSYWAIT_64_us(52);
+
+  TEMP_BUSYWAIT_SETUP_STOP;
 
   return d;
 }
 
-void temperature_get()
+void temperature_crcpush(uint8_t bit, uint8_t *crc)
 {
-  temperature_status = temperature_status_reset_pulse_h;
-  temperature_flags  = 0;   /* Reset the flags */
+  /* XOR gates push into bits 7, 3 and 2, so move the bit in 'bit' to
+   * be in those. Take the bit and XOR it with the least significant
+   * CRC bit. */
 
-  /* Perform the first step of the reset pulse and start timer */
-  TEMP_EXT_PULLLOW;     /* Grab the 1wire bus and pull it low */
-  TEMP_INT_PULLLOW;
+  bit = 0;
+  if (bit || (*crc & 0x01))        /* One or the other */
+  {
+    if (!(bit && (*crc & 0x01)))   /* But not both     */
+    {
+      bit = 0x8C;                  /*  0b10001100  */
+    }
+  }
 
-  TCNT0   = 0;                          /* Reset counter */
-  OCR0A   = 140;                        /* Interrupt in 560 microseconds */
+  /* Now shift the crc right */
+  *crc = *crc >> 1;
 
-  TCCR0B  = ((_BV(CS00)) | _BV(CS01));  /* Enable timer at FCPU/64 */
-
-  /* The timer is now ticking at 250000hz, so all our microsecond timings
-   * get divided by 4. (ie for 60microseceonds set OCR0A = 60/4 = 15) */
+  /* Now xor the bit with the crc to write the result of those gates */
+  *crc ^= bit;
 }
 
 /* We only have to do this once. Setting it low and leaving it means that 
@@ -218,15 +380,14 @@ void temperature_get()
 
 void temperature_init()
 {
-  /* Set timer0 settings. Timer0 gets reset and enabled in temperature_get() */
-  TIMSK0 |= _BV(OCIE0A);  /* Enable compare match interrupts */
-  TCCR0A |= _BV(WGM01);   /* Clear timer on compare match */
-
   /* Initialise the 1wire as released, don't turn on internal pullups.
    * The external 4k7 will pull it high. */
   TEMP_EXT_RELEASE;
   TEMP_EXT_RELEASE;
   TEMP_EXT_LOW;
   TEMP_INT_LOW;
+
+  /* This is scaled and enabled as needed */
+  TEMP_BUSYWAIT_SETUP_STOP;
 }
 

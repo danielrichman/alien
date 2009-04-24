@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "camera.h"
 #include "gps.h"  
 #include "hexdump.h"
 #include "messages.h"  
@@ -394,7 +395,7 @@ void gps_init()
    *      = 16000000/16b - 1
    *      = 1000000/b - 1
    *      = 1000000/4800 - 1 = 207.3333 */
-  UBRR0 = 208;
+  UBRR0 = 207;
 
   /* Enable Recieve Interrupts and UART RX mode. Don't enable TX */
   UCSR0B = ((_BV(RXCIE0)) | (_BV(RXEN0)));

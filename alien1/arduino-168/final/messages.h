@@ -50,7 +50,6 @@ typedef struct
 {
   uint16_t internal_temperature;
   uint16_t external_temperature;
-  uint16_t temperature_age;
 } temperature_data;
 
 /* Data string struct */

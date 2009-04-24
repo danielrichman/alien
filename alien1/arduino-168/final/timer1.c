@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "camera.h"
 #include "gps.h"  
 #include "hexdump.h"
 #include "messages.h"  
@@ -43,11 +44,11 @@
  * the UART to send a SMS. gps.c zeros  it whenever it recieves a char,
  * so if it reaches a high value we know that the UART is idle. 
  * See note below */
-uint8_t timer1_uart_idle_counter;
-uint8_t timer1_want_to_send_sms, timer1_want_to_take_temp;
+uint8_t timer1_uart_idle_counter, timer1_want_to_send_sms;
 
 /* These divide the 50hz into seconds and minutes */
 uint8_t timer1_fifty_counter, timer1_second_counter;
+uint8_t timer1_temperature_counter;
 
 /* TODO: Perhaps some sort of watch dog? Check if one of the modules is 
  * TODO: failing (ie. hasn't provided an update in ages) and kick it? */
@@ -66,10 +67,13 @@ ISR (TIMER1_COMPA_vect)
     /* One second has passed */
     timer1_fifty_counter = 0;
 
-    /* Something to do each second: */
-    messages_push();
-    latest_data.system_location.fix_age++;
-    latest_data.system_temp.temperature_age++;
+    /* Somethings to do each second: */
+    messages_push();                           /* Push Messages */
+    latest_data.system_location.fix_age++;     /* Increment Age */
+
+    /* Set the age bits on the temperature values */
+    latest_data.system_temp.external_temperature |= temperature_ubits_age;
+    latest_data.system_temp.internal_temperature |= temperature_ubits_age;
 
     /* Just to remind everyone that we're still alive */
     FLASH_LED;
@@ -83,43 +87,51 @@ ISR (TIMER1_COMPA_vect)
       timer1_second_counter = 0;
 
       /* Something to do every minute */
-      if (temperature_status == temperature_status_reset_pulse_l)
-      {
-        /* If the temperature isn't busy (It shouldn't be!!!) */
-        timer1_want_to_take_temp = 1;
-      }
+      temperature_state = temperature_state_want_to_get;
 
       /* TODO: Add SMS want-to-send logic */
-      /* if (sms_is_good_idea && timer1_want_to_send_sms == 0)
+      /* if (sms_is_good_idea)
        *   timer1_want_to_send_sms = 1; */
     }
   }
 
-  /* Try to avoid other interrupts when taking temperature - start it at
-   * the end of a 50hz interrupt so it has the biggest chance possible
-   * on that score, and use the uart_idle counter to dodge the big
-   * gps interrupts. Also, try to avoid gps comms when sending smses. 
-   * Sending an sms should only take 1 50hz tick to complete, so 
-   * shan't interfere with much else. Just start it a fair distance
-   * from gps comms */
-  if (timer1_want_to_send_sms == 1 || timer1_want_to_take_temp == 1)
+  /* Deal with temperature wait-loop */
+  if ( temperature_state == temperature_state_requested &&
+       (timer1_temperature_counter == timer1_fifty_counter))
   {
-    timer1_uart_idle_counter++;
+    temperature_state = temperature_state_waited;
+  }
 
-    if (timer1_uart_idle_counter == 12 && timer1_want_to_take_temp == 1)
+  /* Count the silence */
+  timer1_uart_idle_counter++;
+
+  if (timer1_want_to_send_sms == 1 || 
+      temperature_state == temperature_state_want_to_get ||
+      temperature_state == temperature_state_waited)
+  {
+    /* I estimate that the 'safe-window' is about here */
+    if (timer1_uart_idle_counter > 10 && timer1_uart_idle_counter < 40)
     {
-      timer1_want_to_take_temp = 0;
+      /* Do something */
       timer1_uart_idle_counter = 0;
 
-      temperature_get();
-    }
+      if (temperature_state == temperature_state_want_to_get)
+      {
+        temperature_request();
 
-    if (timer1_uart_idle_counter == 30 && timer1_want_to_send_sms  == 1)
-    {
-      timer1_want_to_send_sms  = 0;
-      timer1_uart_idle_counter = 0;
+        /* Wait until the fifty counter gets back to its current value */
+        timer1_temperature_counter = timer1_fifty_counter;
+      }
+      else if (temperature_state == temperature_state_waited)
+      {
+        temperature_retrieve();
+      }
 
-      /* TODO: Add sms.c and function to take over the UART for sms sending! */
+      if (timer1_want_to_send_sms == 1)
+      {
+        timer1_want_to_send_sms = 0;
+        /* TODO: Add sms.c and function to take over the UART for sending */
+      }
     }
   }
 }

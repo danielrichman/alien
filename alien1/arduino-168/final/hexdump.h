@@ -40,4 +40,8 @@
 #define hexdump_a(byte)  num_to_char( last_four(byte))
 #define hexdump_b(byte)  num_to_char(first_four(byte))
 
+/* Casts anything like a struct to something we can hexdump/treat
+ * as byte-array */
+#define ba(source)  ( (uint8_t *) (&(source)) )
+
 #endif

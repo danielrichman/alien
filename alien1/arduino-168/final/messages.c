@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "camera.h"
 #include "gps.h"  
 #include "hexdump.h"
 #include "messages.h"  
@@ -69,83 +70,43 @@ uint8_t message_header[message_header_length] = { '$', '$', 'A', '1' };
 /* powten: look up table for 10 to the power n */
 uint16_t powten[5] = { 1, 10, 100, 1000, 10000 };
 
-/* Utility macros */
-#define field_copys(source, length)                                          \
-           if (data->message_send_fsubstate == (length))                     \
-           {                                                                 \
-             c = ',';                                                        \
-             data->message_send_field++;                                     \
-             data->message_send_fstate = 0;                                  \
-             data->message_send_fsubstate = 0;                               \
-           }                                                                 \
-           else                                                              \
-           {                                                                 \
-             c = (source)[data->message_send_fsubstate];                     \
-             data->message_send_fsubstate++;                                 \
-           }
+/* Raw scopy */
+#define   scopys(source, len, type)   scopy_len  = len;                   \
+                                      scopy_src  = source;                \
+                                      scopy_type = type;
 
-#define fstate_copys(source, length, delim)                                  \
-           if (data->message_send_fsubstate == (length))                     \
-           {                                                                 \
-             c = delim;                                                      \
-             data->message_send_fstate++;                                    \
-             data->message_send_fsubstate = 0;                               \
-           }                                                                 \
-           else                                                              \
-           {                                                                 \
-             c = (source)[data->message_send_fsubstate];                     \
-             data->message_send_fsubstate++;                                 \
-           }
+/* Derivatives */
+#define scopysba(source, len, type)  scopys(ba(source), len, type)
 
-/* Casts anything like a struct to something we can hexdump/treat
- * as byte-array */
-#define ba(source)  ( (uint8_t *) &source )
+#define    scopy(source, type)       scopys(   source,  sizeof(source), type)
+#define  scopyba(source, type)       scopys(ba(source), sizeof(source), type)
 
-#define field_hexdumps(source, length)                                       \
-           if (data->message_send_fsubstate == (length))                     \
-           {                                                                 \
-             c = ',';                                                        \
-             data->message_send_field++;                                     \
-             data->message_send_fstate = 0;                                  \
-             data->message_send_fsubstate = 0;                               \
-           }                                                                 \
-           else                                                              \
-           {                                                                 \
-             if (data->message_send_fstate == 0)                             \
-             {                                                               \
-               c =  last_four( (ba(source))[data->message_send_fsubstate] ); \
-               data->message_send_fstate = 1;                                \
-             }                                                               \
-             else                                                            \
-             {                                                               \
-               c = first_four( (ba(source))[data->message_send_fsubstate] ); \
-               data->message_send_fstate = 0;                                \
-               data->message_send_fsubstate++;                               \
-             }                                                               \
-                                                                             \
-             c = num_to_char(c);                                             \
-           }
-
-#define    field_copy(source)           field_copys((source), sizeof(source))
-#define   fstate_copy(source, delim)                                         \
-                              fstate_copys((source), sizeof(source), (delim))
-#define field_hexdump(source)        field_hexdumps((source), sizeof(source))
+/* scopy types */
+#define scopy_type_null     0x00
+#define scopy_type_field    0x01
+#define scopy_type_fstate   0x02
+#define scopy_type_hexdump  0x04
 
 /* Gets the next character to send */
 uint8_t messages_get_char(payload_message *data, uint8_t message_type)
 {
-  uint8_t c, e;    /* Char to return, is it the end? */
+  uint8_t c;       /* Char to return     */
   uint8_t i;       /* Temporary variable */
   div_t divbuf;    /* Temporary divide result storage */
 
+  /* scopy enabling values */
+  uint8_t scopy_len, scopy_type, scopy_delim;
+  uint8_t *scopy_src;
+
   /* Initialise to false */
-  e = 0;
   c = 0;
+  scopy_type  = 0;
+  scopy_delim = 1;
 
   switch (data->message_send_field)
   {
     case message_send_field_header:
-      field_copy(message_header)
+      scopy(message_header, scopy_type_field)
       break;
 
     case message_send_field_inccnt:
@@ -187,19 +148,18 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
       break;
 
     case message_send_field_gpstime:
-      /* fstate_copy only increments fstate at the end, and allows a extra
-       * delimiter (':') to be added. field copy finishes the time field off
-       * and moves onto latitude */
       switch (data->message_send_fstate)
       {
         case message_send_fstate_gpstime_hh:
-          fstate_copys(    data->system_location.time     , 2, ':')
+          scopys(    data->system_location.time     , 2, scopy_type_fstate)
+          scopy_delim = ':';
           break;
         case message_send_fstate_gpstime_mm:
-          fstate_copys( &((data->system_location.time)[2]), 2, ':')
+          scopys( &((data->system_location.time)[2]), 2, scopy_type_fstate)
+          scopy_delim = ':';
           break;
         case message_send_fstate_gpstime_ss:
-          field_copys(  &((data->system_location.time)[4]), 2)
+          scopys( &((data->system_location.time)[4]), 2, scopy_type_field)
           break;
       }
 
@@ -221,11 +181,12 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
           /* no break - move straight on */
 
         case message_send_fstate_gpslat_d:
-          fstate_copy(data->system_location.lat_d, '.')
+          scopy(data->system_location.lat_d, scopy_type_fstate)
+          scopy_delim = '.';
           break;
 
         case message_send_fstate_gpslat_p:
-          field_copy(data->system_location.lat_p)
+          scopy(data->system_location.lat_p, scopy_type_field)
           break;
       }
       break;
@@ -246,31 +207,32 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
           /* no break - move straight on */
 
         case message_send_fstate_gpslon_d:
-          fstate_copy(data->system_location.lon_d, '.')
+          scopy(data->system_location.lon_d, scopy_type_fstate)
+          scopy_delim = '.';
           break;
 
         case message_send_fstate_gpslon_p:
-          field_copy(data->system_location.lon_p)
+          scopy(data->system_location.lon_p, scopy_type_field)
           break;
       }
       break;
 
     case message_send_field_gpsalt:
-      field_copy(data->system_location.alt);
+      scopy(data->system_location.alt, scopy_type_field)
       break;
 
     case message_send_field_gpsfixage:
-      field_hexdump(data->system_location.fix_age);
+      scopyba(data->system_location.fix_age, scopy_type_hexdump)
       break;
 
     case message_send_field_temperature:
-      field_hexdump(data->system_temp);
+      scopyba(data->system_temp, scopy_type_hexdump)
       break;
 
     case message_send_field_sysdata:
       if (message_type == message_type_log)
       {
-        field_hexdump(data->system_state);
+        scopyba(data->system_state, scopy_type_hexdump)
         break;
       }
 
@@ -308,19 +270,58 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
 
     case message_send_field_end:
     default:
-      e = 1;  /* Tells parent function that it is the end of transmission */
+      return 0; /* Tells parent function that it is the end of transmission */
       break;
   }
 
-  if (e == 1)
+  if (scopy_type != scopy_type_null)
   {
-    return 0;  /* Returning 0 ends the transmission */
+    if (data->message_send_fsubstate == scopy_len) 
+    {
+      if (scopy_type == scopy_type_fstate)
+      {
+        c = scopy_delim;
+        data->message_send_fstate++;
+      }
+      else
+      {
+        c = ',';
+        data->message_send_field++; 
+        data->message_send_fstate = 0;  
+      }
+
+      data->message_send_fsubstate = 0;
+    } 
+    else  
+    {
+      if (scopy_type == scopy_type_hexdump)
+      {
+        if (data->message_send_fstate == 0) 
+        {
+          c =  last_four( scopy_src[data->message_send_fsubstate] ); 
+          data->message_send_fstate = 1;
+        }
+        else
+        {
+          c = first_four( scopy_src[data->message_send_fsubstate] ); 
+          data->message_send_fstate = 0;
+          data->message_send_fsubstate++;
+        }
+
+        c = num_to_char(c); 
+      }
+      else
+      {
+        c = scopy_src[data->message_send_fsubstate];
+        data->message_send_fsubstate++;
+      }
+    }
   }
 
   if (c == 0)
   {
     /* This should never happen. It's kinda damage-limitation */
-    c = '!';   /* Shouldn't == 0 if e != 1 */
+    c = '!';   /* Shouldn't == 0 if we haven't returned already */
   }
 
   if (data->message_send_field < message_send_field_checksum &&

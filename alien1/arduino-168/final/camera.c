@@ -30,19 +30,5 @@
 #include "temperature.h"  
 #include "timer1.h"
 
-int main()
-{
-  /* Setup everything (except SMS which competes with gps for 
-   * the UART, is only enabled when it is needed */
-  radio_init();
-  gps_init();
-  temperature_init();
-  timer1_init();
-
-  /* Interrupts on */
-  sei();
-
-  /* Now sleep */
-  for (;;)    sleep_mode();
-}
+/* TODO: camera.c */
 

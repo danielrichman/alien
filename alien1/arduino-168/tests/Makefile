@@ -23,10 +23,10 @@ all : $(hexfiles)
 
 %.elf : %.c
 	avr-gcc -mmcu=atmega168 -DF_CPU=16000000 -Wall -pedantic -O2 -o $@ $<
+	avr-size $@
 
 %.hex : %.elf
 	avr-objcopy -O ihex $< $@
-	avr-size $@
 
 %.hex.upload : %.hex
 	avrdude -V -F -C /etc/avrdude.conf \

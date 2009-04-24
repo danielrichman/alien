@@ -19,25 +19,25 @@
 #define ALIEN_TEMPERATURE_HEADER
 
 /* Global status variables & defines */
-#define temperature_status_reset_pulse_l      0
-#define temperature_status_reset_pulse_h      1
-#define temperature_status_presence_pulse     2
-#define temperature_status_skiprom_cmd        3
-#define temperature_status_convtemp_cmd       4
-#define temperature_status_convtemp           5
-#define temperature_status_reset_pulse2_l     6
-#define temperature_status_reset_pulse2_h     7
-#define temperature_status_presence_pulse2    8
-#define temperature_status_readscratch_cmd    9
-#define temperature_status_readscratch        10
-#define temperature_status_end                11
+extern uint8_t temperature_state;
 
-extern uint8_t temperature_status;
+#define temperature_state_null            0
+#define temperature_state_want_to_get     1
+#define temperature_state_requested       2
+#define temperature_state_waited          3
+
+/* Bits in the MSB of the temperature to signal things (they arn't used) */
+#define temperature_ubits_age             0x80
+#define temperature_ubits_err             0x40
 
 /* Prototypes */
-void temperature_writeb(uint8_t b);
-uint8_t temperature_read();
-void temperature_get();
+void temperature_request();
+void temperature_retrieve();
+void temperature_reset();
+void temperature_writebyte(uint8_t db);
+void temperature_readbyte(uint8_t *ext_target, uint8_t *int_target);
+uint8_t temperature_readbit();
+void temperature_crcpush(uint8_t bit, uint8_t *crc);
 void temperature_init();
 
 #endif 
