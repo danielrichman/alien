@@ -1,13 +1,30 @@
-/* Copyright (c) 2009, Daniel Richman. All rights reserved. */
+/*
+    Copyright (C) 2008  Daniel Richman
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    For a full copy of the GNU General Public License, 
+    see <http://www.gnu.org/licenses/>.
+*/
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 
-/* Simulate timer1.c, main.c and messages.c */
+/* Simulate timer1.c, main.c and messages.c and add debugging hacks */
 #include "../final/temperature.c"
 payload_message latest_data;
 extern uint8_t temperature_flags, temperature_ext_crc, temperature_int_crc;
+
+/* make -sBj5 temptest.hex.upload && stty -F /dev/ttyUSB0 cs8 4800 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts && cat /dev/ttyUSB0 */
 
 void send_char(uint8_t c)
 {
@@ -23,6 +40,9 @@ void send_char_hd(uint8_t c)
 
 ISR (TIMER1_COMPA_vect)
 {
+  send_char_hd( temperature_state );
+  send_char( ' ' );
+
   switch (temperature_state)
   {
     case temperature_state_null:
@@ -36,17 +56,19 @@ ISR (TIMER1_COMPA_vect)
       break;
   }
 
-  send_char_hd( ((uint8_t *) &latest_data.system_temp)[0] );
+  /* Note - this compensates for little endian */
   send_char_hd( ((uint8_t *) &latest_data.system_temp)[1] );
+  send_char_hd( ((uint8_t *) &latest_data.system_temp)[0] );
   send_char( ' ' );
-  send_char_hd( ((uint8_t *) &latest_data.system_temp)[2] );
   send_char_hd( ((uint8_t *) &latest_data.system_temp)[3] );
+  send_char_hd( ((uint8_t *) &latest_data.system_temp)[2] );
   send_char( ' ' );
-  send_char( temperature_ext_crc );
+  send_char_hd( temperature_ext_crc );
   send_char( ' ' );
-  send_char( temperature_int_crc );
+  send_char_hd( temperature_int_crc );
   send_char( ' ' );
-  send_char( temperature_flags );
+  send_char_hd( temperature_state );
+  send_char_hd( temperature_flags );
   send_char( '\n' );
 
   latest_data.system_temp.external_temperature |= temperature_ubits_age;

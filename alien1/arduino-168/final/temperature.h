@@ -27,8 +27,8 @@ extern uint8_t temperature_state;
 #define temperature_state_waited          3
 
 /* Bits in the MSB of the temperature to signal things (they arn't used) */
-#define temperature_ubits_age             0x80
-#define temperature_ubits_err             0x40
+#define temperature_ubits_age             0x8000
+#define temperature_ubits_err             0x4000
 
 /* Prototypes */
 void temperature_request();

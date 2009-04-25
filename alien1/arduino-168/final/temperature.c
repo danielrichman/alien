@@ -191,10 +191,10 @@ void temperature_retrieve()
   /* BIT_CLEAR */
   /* Clear the two most significant bits in temp_ba[1], so that we can use
    * them to signal age or invalidness. */
-  *temperature_external_msb &= ~(temperature_ubits_age | 
-                                 temperature_ubits_err);
-  *temperature_internal_msb &= ~(temperature_ubits_age | 
-                                 temperature_ubits_err);
+  temperature_external &= ~(temperature_ubits_age | 
+                            temperature_ubits_err);
+  temperature_internal &= ~(temperature_ubits_age | 
+                            temperature_ubits_err);
 
   /* TEMP_SAVE */
   if (TEMP_EXT_OK)
@@ -215,11 +215,15 @@ void temperature_retrieve()
     latest_data.system_temp.internal_temperature |= temperature_ubits_err;
   }
 
-  /* Have we completed successfully? If not, don't set it and timer1.c
-   * will call us again quicker */
+  /* Have we completed successfully? If not, set state to want_to_get and 
+   * timer1.c will call us again quicker */
   if (TEMP_EXT_OK && TEMP_INT_OK)
   {
     temperature_state = temperature_state_null;   /* Finished. */
+  }
+  else
+  {
+    temperature_state = temperature_state_want_to_get;
   }
 }
 
