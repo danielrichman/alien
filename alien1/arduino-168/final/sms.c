@@ -24,6 +24,7 @@
 #include "camera.h"
 #include "gps.h"  
 #include "hexdump.h"
+#include "main.h"
 #include "messages.h"  
 #include "radio.h" 
 #include "sms.h"

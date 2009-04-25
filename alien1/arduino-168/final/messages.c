@@ -24,6 +24,7 @@
 #include "camera.h"
 #include "gps.h"  
 #include "hexdump.h"
+#include "main.h"
 #include "messages.h"  
 #include "radio.h" 
 #include "sms.h"
@@ -91,7 +92,6 @@ uint16_t powten[5] = { 1, 10, 100, 1000, 10000 };
 uint8_t messages_get_char(payload_message *data, uint8_t message_type)
 {
   uint8_t c;       /* Char to return     */
-  uint8_t i;       /* Temporary variable */
   div_t divbuf;    /* Temporary divide result storage */
 
   /* scopy enabling values */
@@ -117,23 +117,18 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
         data->message_send_fstate    = 1;
       }
 
-      if (data->message_send_fsubstate == 0)
+      if (data->message_send_fstate == 2)
       {
-        /* Should just be the units left */
-        c = '0' + data->message_id;
+        c = ',';
         data->message_send_field++;
         data->message_send_fstate = 0;
         data->message_send_fsubstate = 0;
         break;
       }
-      else
-      {
-        i = powten[data->message_send_fsubstate];
-      }
 
-      /* Time for some magic. Divide i into message_id *
+      /* Time for some magic. Divide 10^n into message_id *
        * gets stored in message_id */
-      divbuf = div(data->message_id, i);
+      divbuf = udiv(data->message_id, powten[data->message_send_fsubstate]);
 
       /* Quotient is the current digit:
        * Start at '0' and count up to '1' ... */
@@ -143,7 +138,15 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
       data->message_id = divbuf.rem;
 
       /* Move onto a lesser digit */
-      data->message_send_fsubstate--;
+      if (data->message_send_fsubstate == 0)
+      {
+        /* Flag it as finished, need to send comma and move on */
+        data->message_send_fstate = 2;
+      }
+      else
+      {
+        data->message_send_fsubstate--;
+      }
 
       break;
 
@@ -320,13 +323,14 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
 
   if (c == 0)
   {
-    /* This should never happen. It's kinda damage-limitation */
-    c = '!';   /* Shouldn't == 0 if we haven't returned already */
+    /* Shouldn't == 0 if we haven't returned already. This may happen for the
+     * first few messages where there is no gps data */
+    c = '!';
   }
 
   if (data->message_send_field < message_send_field_checksum &&
       !(data->message_send_field == message_send_field_header &&
-        data->message_send_fsubstate < 2))
+        data->message_send_fsubstate < 3))
   {
     /* If: the current char is before the checksum (we don't wanna check the
      * the * or the checksum itself) AND it's not the first two chars of 

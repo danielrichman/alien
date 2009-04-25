@@ -24,6 +24,7 @@
 #include "camera.h"
 #include "gps.h"  
 #include "hexdump.h"
+#include "main.h"
 #include "messages.h"  
 #include "radio.h" 
 #include "sms.h"
@@ -250,7 +251,7 @@ ISR (USART_RX_vect)
         gps_prem += c - '0';
 
         /* Now divide by six */
-        divbuf = div(gps_prem, 6);
+        divbuf = udiv(gps_prem, 6);
 
         if (gps_substate == 0)
         {
@@ -282,7 +283,7 @@ ISR (USART_RX_vect)
            * still have a remainder and still have the last char
            * to fill. Treat the last char as 0, so nothing to add to
            * prem. Now we divide and just stuff the quotient in */
-          divbuf = div(gps_prem, 6);
+          divbuf = udiv(gps_prem, 6);
           gps_storing_location[5] = '0' + divbuf.quot;
         }
 

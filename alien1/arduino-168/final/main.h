@@ -15,21 +15,11 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
-#include <stdint.h>
-#include <stdlib.h>
+#ifndef ALIEN_MAIN_HEADER
+#define ALIEN_MAIN_HEADER
 
-#include "camera.h"
-#include "gps.h"  
-#include "hexdump.h"
-#include "main.h"
-#include "messages.h"  
-#include "radio.h" 
-#include "sms.h"
-#include "temperature.h"  
-#include "timer1.h"
+/* Define the divide function that we use, just an alias to some libc stuff */
+extern div_t udiv(int __num, int __denom) __asm__("__udivmodhi4") 
+                                                               __ATTR_CONST__;
 
-/* TODO: camera.c */
-
+#endif 
