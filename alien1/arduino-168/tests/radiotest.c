@@ -21,11 +21,17 @@
 
 #include "../final/radio.c"
 
-/* make -sBj5 radiotest.hex.upload && stty -F /dev/ttyUSB0 cs8 4800 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts && cat /dev/ttyUSB0 */
+/* make -sBj5 radiotest.hex.upload */
 
 payload_message radio_data;
 uint8_t i;
-uint8_t msg[12] = {'H','e','l','l','o',' ','W','o','r','l','d','\n'};
+uint8_t msg[] = {'H', 'e', 'l', 'l', 'o',  ' ', 'W', 'o', 'r', 'l', 'd', '\n',
+                 'a', 'b', 'c', 'd', 'e',  'f', 'g', 'h', 'i', 'j', 'k', 'l', 
+                 'm', 'n', 'o', 'p', 'q',  'r', 's', 't', 'u', 'v', 'w', 'x', 
+                 'y', 'z', 'A', 'B', 'C',  'D', 'E', 'F', 'G', 'H', 'I', 'J', 
+                 'K', 'L', 'M', 'N', 'O',  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 
+                 'W', 'X', 'Y', 'Z', '\n', '0', '1', '2', '3', '4', '5', '6', 
+                 '7', '8', '9', '\n' };
 
 ISR (TIMER1_COMPA_vect)
 {
@@ -39,7 +45,7 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
   c = msg[i];
   i++;
 
-  if (i == 12)  i = 0;
+  if (i == sizeof(msg))  i = 0;
 
   return c;
 }
