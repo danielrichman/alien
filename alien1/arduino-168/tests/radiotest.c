@@ -24,7 +24,19 @@
 /* make -sBj5 radiotest.hex.upload */
 
 payload_message radio_data;
+
+#ifndef TEST_MESSAGE_LONG
+  #ifndef TEST_MESSAGE_SHORT
+    #ifndef TEST_CHAR
+      #define TEST_MESSAGE_SHORT
+    #endif
+  #endif
+#endif
+
+#ifndef TEST_MESSAGE_CHAR
 uint8_t i;
+#endif
+#ifdef TEST_MESSAGE_LONG
 uint8_t msg[] = {'H', 'e', 'l', 'l', 'o',  ' ', 'W', 'o', 'r', 'l', 'd', '\n',
                  'a', 'b', 'c', 'd', 'e',  'f', 'g', 'h', 'i', 'j', 'k', 'l', 
                  'm', 'n', 'o', 'p', 'q',  'r', 's', 't', 'u', 'v', 'w', 'x', 
@@ -32,6 +44,10 @@ uint8_t msg[] = {'H', 'e', 'l', 'l', 'o',  ' ', 'W', 'o', 'r', 'l', 'd', '\n',
                  'K', 'L', 'M', 'N', 'O',  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 
                  'W', 'X', 'Y', 'Z', '\n', '0', '1', '2', '3', '4', '5', '6', 
                  '7', '8', '9', '\n' };
+#endif
+#ifdef TEST_MESSAGE_SHORT
+uint8_t msg[] = {'H', 'e', 'l', 'l', 'o',  ' ', 'W', 'o', 'r', 'l', 'd', '\n'};
+#endif
 
 ISR (TIMER1_COMPA_vect)
 {
@@ -40,6 +56,9 @@ ISR (TIMER1_COMPA_vect)
 
 uint8_t messages_get_char(payload_message *data, uint8_t message_type)
 {
+  #ifdef TEST_CHAR
+  return 'U';   /* 0b01010101 */
+  #else
   uint8_t c;
 
   c = msg[i];
@@ -48,13 +67,11 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
   if (i == sizeof(msg))  i = 0;
 
   return c;
+  #endif
 }
 
 int main(void)
 {
-       /* Setup IO */
-  DDRB  |= _BV(DDB5);     /* Put PB5 as an output (pin13) */
-
        /* Setup timer to 50hz (from timer1.c) */
   /* Clear the timer counter */
   TCNT1  = 0;
@@ -74,9 +91,6 @@ int main(void)
 
        /* Turn on interrupts */
   sei();
-
-       /* Light on... */
-  PORTB |= _BV(PB5);
 
        /* Start the radio */
   radio_send();

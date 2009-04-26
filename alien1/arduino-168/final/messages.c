@@ -33,7 +33,7 @@
 
 /* $$A1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<N-LATITUDE DD.DDDDDD>,
  * <E-LONGITUDE DDD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FIX_AGE_HEXDUMP>,
- * <SYSTEM_STATE_DATA_HEXDUMP>,<PAYLOAD_MSG_ST_HXDMP_4LSB>
+ * <TEMPERATURE_HEXDUMP>,<SYSTEM_STATE_DATA_HEXDUMP>,*<CHECKSUM>
  * <NEWLINE> */
 
 /* Message Buffers: see messages.h for more info */
@@ -346,6 +346,12 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
 void messages_push()
 {
   if (radio_state == radio_state_not_txing)
+  {
+    /* Skip a message */
+    radio_state = radio_state_want_to_tx;
+  }
+
+  if (radio_state == radio_state_want_to_tx)
   {
     radio_data = latest_data;   /* Update the radio's copy */
     radio_send();               /* Go go go! */

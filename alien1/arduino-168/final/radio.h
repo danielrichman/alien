@@ -21,8 +21,10 @@
 #include <stdint.h>
 
 #define radio_state_not_txing   0xFF
+#define radio_state_want_to_tx  0xEE
 #define radio_state_start_bit   0xDD
-#define radio_state_stop_bit    0xEE
+#define radio_state_stop_bit_a  0xCC
+#define radio_state_stop_bit_b  0xBB
 #define radio_no_of_bits          7      /* 7bit ASCII */
 /* 0x00 through 0x07 for radio_state represents bits */
 /* Transmitting the stop bit sets the idle state too */

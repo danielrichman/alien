@@ -31,13 +31,13 @@
 #include "temperature.h"  
 #include "timer1.h"
 
-/* The radio will be on gpio 4 (high => mark:1.2V, low => space:1.0V). 
- * Potential Dividors with potentiometers will generate the 
- * required voltages
- * Arduino gpio4 = Port D; PD4 */
+/* The radio will be on gpio 4 and 3.
+ * Arduino gpio4 = Port D, PD4; gpio3 = Port D, PD3 */
 
-#define RADIO_MARK  PORTD |=   _BV(PD4)  /*   Set the bit; pb4 on  => mark  */
-#define RADIO_SPACE PORTD &= ~(_BV(PD4)) /* Clear the bit; pb4 off => space */
+#define RADIO_MARK  PORTD &= ~(_BV(PD3));    /* PD4 on PD3 off */  \
+                    PORTD |=   _BV(PD4);
+#define RADIO_SPACE PORTD &= ~(_BV(PD4));    /* PD3 on PD4 off */  \
+                    PORTD |=   _BV(PD3);
 
 /* radio_state #defines are in radio.h */
 
@@ -47,46 +47,54 @@ uint8_t radio_state, radio_char;
 /* 50hz timer interrupt */
 void radio_proc()
 {
-  if (radio_state == radio_state_not_txing)
+  switch (radio_state)
   {
-    RADIO_MARK;
-  }
-  else if (radio_state == radio_state_stop_bit)
-  {
-    RADIO_MARK;
+    case radio_state_not_txing:
+    case radio_state_want_to_tx:
+      RADIO_MARK
+      break;
+  
+    case radio_state_stop_bit_a:
+      RADIO_MARK
+      radio_state = radio_state_stop_bit_b;
+      break;
 
-    radio_char = messages_get_char(&radio_data, message_type_radio);
-    if (radio_char != 0)
-    {
-      radio_state = radio_state_start_bit;
-    }
-    else
-    {
-      radio_state = radio_state_not_txing;
-    }
-  }
-  else if (radio_state == radio_state_start_bit)
-  {
-    RADIO_SPACE;
-    radio_state = 0;    /* Get ready for the first bit! */
-  }
-  else
-  {
-    if (radio_char & _BV(radio_state))  /* If the bit is set... */
-    {
-      RADIO_MARK;
-    }
-    else
-    {
-      RADIO_SPACE;
-    }
+    case radio_state_stop_bit_b:
+      RADIO_MARK
 
-    radio_state++;                      /* Next bit */
+      radio_char = messages_get_char(&radio_data, message_type_radio);
+      if (radio_char != 0)
+      {
+        radio_state = radio_state_start_bit;
+      }
+      else
+      {
+        radio_state = radio_state_not_txing;
+      }
+      break;
 
-    if (radio_state == radio_no_of_bits)
-    {
-      radio_state = radio_state_stop_bit;
-    }
+    case radio_state_start_bit:
+      RADIO_SPACE
+      radio_state = 0;    /* Get ready for the first bit! */
+      break;
+
+    default:
+      if (radio_char & _BV(radio_state))  /* If the bit is set... */
+      {
+        RADIO_MARK
+      }
+      else
+      {
+        RADIO_SPACE
+      }
+
+      radio_state++;                      /* Next bit */
+
+      if (radio_state == radio_no_of_bits)
+      {
+        radio_state = radio_state_stop_bit_a;
+      }
+      break;
   }
 }
 
@@ -97,7 +105,8 @@ void radio_init()
 
        /* Setup Radio Outputs */
   DDRD  |= _BV(DDD4);     /* Set portD, pin4 as an output.   */
-  RADIO_MARK;             /* Idle state = mark               */
+  DDRD  |= _BV(DDD3);     /* Set portD, pin3 as an output.   */
+  RADIO_MARK              /* Idle state = mark               */
 }
 
 /* This function is called after placing data in radio_data,
