@@ -76,6 +76,12 @@ ISR (USART_RX_vect)
   /* Reset the idle counter */
   timer1_uart_idle_counter = 0;
 
+  /* If we're debugging, echo it back */
+  #ifdef ALIEN_DEBUG_GPS
+  loop_until_bit_is_set(UCSR0A, UDRE0);
+  UDR0 = c;
+  #endif
+
   /* We treat the $ as a reset pulse. This overrides the current state because
    * a) a $ isn't valid in any of our data fields
    * b) if a $ is sent by accident/corruptified then the next sentence 
@@ -338,9 +344,7 @@ void gps_next_field()
 
       break;
 
-    case gps_state_lat_p:
     case gps_state_lat_pp:
-    case gps_state_lon_p:
     case gps_state_lon_pp:
       if (gps_substate != 6)
       {
@@ -352,9 +356,14 @@ void gps_next_field()
       break;
   }
 
-  gps_state++;
-  gps_substate = 0;
+  /* We don't reset substate for lat/lon_p, as we need to maintain
+   * that field through to _pp */
+  if (gps_state != gps_state_lat_p && gps_state != gps_state_lon_p)
+  {
+    gps_substate = 0;
+  }
 
+  gps_state++;
   gps_storing_maxlen = 0;  /* Defaults to zero */
 
   /* Find out if it is a simple store or not */
@@ -372,15 +381,19 @@ void gps_next_field()
      * However, we do not enable simple store by gps_storing_maxlen */
 
     case gps_state_lat_p:
+      gps_prem = 0;     /* This holds the remainder/carry for the next digit */
+      /* Don't break, line below applies too */
+
     case gps_state_lat_pp:
       gps_storing_location = gps_data.lat_p;
-      gps_prem = 0;     /* This holds the remainder/carry for the next digit */
       break;
 
     case gps_state_lon_p:
+      gps_prem = 0;
+      /* Don't break, line below applies too */
+
     case gps_state_lon_pp:
       gps_storing_location = gps_data.lon_p;
-      gps_prem = 0;
       break;
   }
 }
@@ -400,5 +413,10 @@ void gps_init()
 
   /* Enable Recieve Interrupts and UART RX mode. Don't enable TX */
   UCSR0B = ((_BV(RXCIE0)) | (_BV(RXEN0)));
+
+  /* And TX if debug mode is on */
+  #ifdef ALIEN_DEBUG_GPS
+  UCSR0B |= _BV(TXEN0);
+  #endif
 }
 
