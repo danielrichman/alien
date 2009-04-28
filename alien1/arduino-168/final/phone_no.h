@@ -42,5 +42,5 @@
   #define ALIEN_PHONE_NO_62    0
   /* STOP EDITING HERE */
 
-#else
+#endif
 
