@@ -31,5 +31,51 @@
 #include "temperature.h"  
 #include "timer1.h"
 
-/* TODO: sms.c */
+/* Deal with phone number hardcoding privacy */
+#include "phone_no_private.h"
+
+#ifndef ALIEN_PHONE_NO_PRIV_HEADER
+  #error The phone number that the computer transmits to 
+  #error is hardcoded in, however, in order to protect the 
+  #error security of our phone number the hardcode is not 
+  #error uploaded to svn. In order to specify a phone number, 
+  #error copy phone_no_example.h to phone_no_private.h and 
+  #error follow the instructions in there.
+#endif
+
+/* This macro takes the second phone no digit in the pair, then pushes it to
+ * the most significant bits of the octet (ie, placing it first in the output,
+ * thus swapping the pairs */
+#define ph(i)  ((ALIEN_PHONE_NO_ ## i ## 2) << 4) + (ALIEN_PHONE_NO_ ## i ## 1)
+
+/* Take the phone number digits and swap the pairs: */
+uint8_t phone_number[12] = { ph(1), ph(2), ph(3), ph(4), ph(5), ph(6) };
+
+uint8_t  sms_state, sms_substate;
+uint16_t sms_temp;             /* Used when constructing the message octets */
+
+ISR (USART_UDRE_vect)
+{
+  /* TODO UDRIE interrupt; sms.c */
+}
+
+/* It's not an _init like the other ones, because it's only called when sms.c
+ * is needed, as it competes with gps.c for use of the UART. */
+void sms_setup()
+{
+  /* gps.c will have set up for 8bit chars */
+
+  /* Prepare to send... */
+  
+
+  /* UBRR = F_CPU/(16 * baudrate) - 1 
+   *      = 16000000/16b - 1
+   *      = 1000000/b - 1
+   *      = 1000000/9600 - 1 = 103.16667 */
+  UBRR0 = 103;
+
+  /* Enable Transmit Mode and UDR empty interrupts */
+  UCSR0B = ((_BV(TXEN0)) | (_BV(UDRIE0)));
+}
+
 

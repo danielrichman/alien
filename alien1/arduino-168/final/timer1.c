@@ -90,9 +90,12 @@ ISR (TIMER1_COMPA_vect)
       /* Something to do every minute */
       temperature_state = temperature_state_want_to_get;
 
-      /* TODO: Add SMS want-to-send logic */
-      /* if (sms_is_good_idea)
-       *   timer1_want_to_send_sms = 1; */
+      if (/* TODO: if sms_is_good_idea */ 0)
+      {
+        sms_data = latest_data;
+        latest_data.system_state.SMSes_sent++;
+        timer1_want_to_send_sms = 1;
+      }
     }
   }
 
@@ -111,7 +114,7 @@ ISR (TIMER1_COMPA_vect)
       temperature_state == temperature_state_waited)
   {
     /* I estimate that the 'safe-window' is about here */
-    if (timer1_uart_idle_counter > 10 && timer1_uart_idle_counter < 40)
+    if (timer1_uart_idle_counter > 15 && timer1_uart_idle_counter < 35)
     {
       /* Do something */
       timer1_uart_idle_counter = 0;
@@ -131,7 +134,7 @@ ISR (TIMER1_COMPA_vect)
       if (timer1_want_to_send_sms == 1)
       {
         timer1_want_to_send_sms = 0;
-        /* TODO: Add sms.c and function to take over the UART for sending */
+        sms_setup();
       }
     }
   }

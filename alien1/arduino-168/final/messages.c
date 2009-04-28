@@ -347,21 +347,8 @@ void messages_push()
 {
   if (radio_state == radio_state_not_txing)
   {
-    /* Skip a message */
-    radio_state = radio_state_want_to_tx;
-  }
-
-  if (radio_state == radio_state_want_to_tx)
-  {
     radio_data = latest_data;   /* Update the radio's copy */
     radio_send();               /* Go go go! */
-  }
-
-  if (/* TODO: if sms.c wants a message */0)
-  {
-    sms_data = latest_data;
-    latest_data.system_state.SMSes_sent++;
-    /* TODO: initiate sending process */
   }
 
   if (/* log.c is ready for a message */0)
