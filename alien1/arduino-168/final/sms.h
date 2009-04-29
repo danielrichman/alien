@@ -18,6 +18,18 @@
 #ifndef ALIEN_SMS_HEADER
 #define ALIEN_SMS_HEADER
 
-/* TODO: see sms.c */
+extern uint8_t sms_state;
+
+#define sms_state_null          0
+#define sms_state_cmdstart      1
+#define sms_state_hexstart_a    2
+#define sms_state_hexstart_b    3
+#define sms_state_messagehex_a  4
+#define sms_state_messagehex_b  5
+#define sms_state_ctrlz         6
+#define sms_state_wait          7
+#define sms_state_end           8
+
+void sms_setup();
 
 #endif 

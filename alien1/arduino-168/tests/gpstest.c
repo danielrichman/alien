@@ -97,6 +97,7 @@ int main(void)
 
        /* Initialise Stuff */
   gps_init();
+  UCSR0B |= _BV(TXEN0);
 
        /* Light on... */
   PORTB |= _BV(PB5);

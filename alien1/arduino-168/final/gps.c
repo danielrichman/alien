@@ -55,9 +55,7 @@ uint8_t gps_state, gps_checksum, gps_substate, gps_storing_maxlen, gps_prem;
 uint8_t *gps_storing_location;
 
 /* GPGGA sentences provide fix data */
-#define gps_sentence_name_length 5
-uint8_t gps_sentence_mask[gps_sentence_name_length] = 
-                                        { 'G', 'P', 'G', 'G', 'A' };
+uint8_t gps_sentence_mask[5] = { 'G', 'P', 'G', 'G', 'A' };
 
 /* Working data location - while we're recieving it goes here. */
 gps_information gps_data;
@@ -75,12 +73,6 @@ ISR (USART_RX_vect)
 
   /* Reset the idle counter */
   timer1_uart_idle_counter = 0;
-
-  /* If we're debugging, echo it back */
-  #ifdef ALIEN_DEBUG_GPS
-  loop_until_bit_is_set(UCSR0A, UDRE0);
-  UDR0 = c;
-  #endif
 
   /* We treat the $ as a reset pulse. This overrides the current state because
    * a) a $ isn't valid in any of our data fields
@@ -195,7 +187,9 @@ ISR (USART_RX_vect)
     switch (gps_state)
     {
       case gps_state_sentence_name:
-        if (c != gps_sentence_mask[gps_substate])
+        /* If it's too long or the wrong char... */
+        if ((gps_substate == sizeof(gps_sentence_mask)) ||
+            (c != gps_sentence_mask[gps_substate]))
         {
           /* Wrong type of sentence for us, thx */
           gps_state = gps_state_null;
@@ -323,7 +317,7 @@ void gps_next_field()
   switch (gps_state)
   {
     case gps_state_sentence_name:
-      if (gps_substate != gps_sentence_name_length)
+      if (gps_substate != sizeof(gps_sentence_mask))
       {
         /* No match. */
         gps_state = gps_state_null;
@@ -413,10 +407,5 @@ void gps_init()
 
   /* Enable Recieve Interrupts and UART RX mode. Don't enable TX */
   UCSR0B = ((_BV(RXCIE0)) | (_BV(RXEN0)));
-
-  /* And TX if debug mode is on */
-  #ifdef ALIEN_DEBUG_GPS
-  UCSR0B |= _BV(TXEN0);
-  #endif
 }
 

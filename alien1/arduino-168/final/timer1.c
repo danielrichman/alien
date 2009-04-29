@@ -47,8 +47,8 @@
  * See note below */
 uint8_t timer1_uart_idle_counter, timer1_want_to_send_sms;
 
-/* These divide the 50hz into seconds and minutes */
-uint8_t timer1_fifty_counter, timer1_second_counter;
+/* These divide the 50hz into seconds, minutes and 5-minutes */
+uint8_t timer1_fifty_counter, timer1_second_counter, timer1_minute_counter;
 uint8_t timer1_temperature_counter;
 
 /* TODO: Perhaps some sort of watch dog? Check if one of the modules is 
@@ -90,10 +90,16 @@ ISR (TIMER1_COMPA_vect)
       /* Something to do every minute */
       temperature_state = temperature_state_want_to_get;
 
-      if (/* TODO: if sms_is_good_idea */ 0)
+      /* Increment the minute counter */
+      timer1_minute_counter++;
+
+      if (sms_state == sms_state_null && timer1_minute_counter == 5)
       {
+        /* Every five minutes ... */
         sms_data = latest_data;
         latest_data.system_state.SMSes_sent++;
+
+        timer1_minute_counter = 0;
         timer1_want_to_send_sms = 1;
       }
     }
@@ -104,6 +110,17 @@ ISR (TIMER1_COMPA_vect)
        (timer1_temperature_counter == timer1_fifty_counter))
   {
     temperature_state = temperature_state_waited;
+  }
+
+  /* Deal with the sms wait-loop */
+  if (sms_state == sms_state_wait)
+  {
+    sms_state++;
+  }
+  else if (sms_state == sms_state_end)
+  {
+    sms_state = sms_state_null;
+    gps_init();
   }
 
   /* Count the silence */

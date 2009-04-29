@@ -31,10 +31,13 @@
 #include "temperature.h"  
 #include "timer1.h"
 
+/* NOTE: messages.c has a hardcoded max-length for messages. If the format
+ * is changed, you must update it */
+
 /* $$A1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<N-LATITUDE DD.DDDDDD>,
  * <E-LONGITUDE DDD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FIX_AGE_HEXDUMP>,
- * <TEMPERATURE_HEXDUMP>,<SYSTEM_STATE_DATA_HEXDUMP>,*<CHECKSUM>
- * <NEWLINE> */
+ * <GPS_SAT_COUNT><TEMPERATURE_HEXDUMP>,<SYSTEM_STATE_DATA_HEXDUMP>,
+ * *<CHECKSUM><NEWLINE> */
 
 /* Message Buffers: see messages.h for more info */
 payload_message latest_data, log_data, radio_data, sms_data;
@@ -47,11 +50,12 @@ payload_message latest_data, log_data, radio_data, sms_data;
 #define message_send_field_gpslon      4
 #define message_send_field_gpsalt      5   /* Ukhas protocol finishes here */
 #define message_send_field_gpsfixage   6
-#define message_send_field_temperature 7
-#define message_send_field_sysdata     8   /* skip for radio/sms */
-#define message_send_field_checksum    9
-#define message_send_field_nl          10
-#define message_send_field_end         11
+#define message_send_field_gpssatc     7
+#define message_send_field_temperature 8
+#define message_send_field_sysdata     9   /* skip for radio/sms */
+#define message_send_field_checksum    10
+#define message_send_field_nl          11
+#define message_send_field_end         12
 
 /* payload_message.message_send_fstate */
 #define message_send_fstate_gpstime_hh      0
@@ -65,8 +69,7 @@ payload_message latest_data, log_data, radio_data, sms_data;
 #define message_send_fstate_gpslon_p        2
 
 /* fcname: flight computer name, name of our balloon */
-#define message_header_length               4
-uint8_t message_header[message_header_length] = { '$', '$', 'A', '1' };
+uint8_t message_header[4] = { '$', '$', 'A', '1' };
 
 /* powten: look up table for 10 to the power n */
 uint16_t powten[5] = { 1, 10, 100, 1000, 10000 };
@@ -226,6 +229,10 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
 
     case message_send_field_gpsfixage:
       scopyba(data->system_location.fix_age, scopy_type_hexdump)
+      break;
+
+    case message_send_field_gpssatc:
+      scopy(data->system_location.satc, scopy_type_field)
       break;
 
     case message_send_field_temperature:

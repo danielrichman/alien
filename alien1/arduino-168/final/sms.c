@@ -48,15 +48,124 @@
  * thus swapping the pairs */
 #define ph(i)  ((ALIEN_PHONE_NO_ ## i ## 2) << 4) + (ALIEN_PHONE_NO_ ## i ## 1)
 
-/* Take the phone number digits and swap the pairs: */
-uint8_t phone_number[12] = { ph(1), ph(2), ph(3), ph(4), ph(5), ph(6) };
+/* Static data - always the same for every sms sent.
+ * See trunk/misc-c/sms-example-v2.c                  */
+/* NOTE: We hardcode the maximum length that it could be, then if it falls
+ * short we pad with spaces. The current maximum (from messages.c) is about
+ * 69, for safety we'll say 75. That makes 66 message octets, and therefore
+ * 60 + 14 total command octets. NOTE also that the number 66 is mentioned
+ * below! (in sms_state_messagehex_b) */
+uint8_t sms_cmdstart[25] = { '\r', '\n', 'A',  'T',  '+',  'C',  'M',  'G', 
+                             'F',  '=',  '0',  '\r', '\n', 'A',  'T',  '+',
+                             'C',  'M',  'G',  'S',  '=',  '8',  '0',  '\r',
+                             '\n'                                            };
 
-uint8_t  sms_state, sms_substate;
+/* This is the first bit of the hexstring, before the message data. 
+ * 0011000C91xxxxxxxxxxxx0000AAyy  where xx...xx is the phone number,
+ * and yy is the hardcoded length (see NOTE above)
+ * See sms-example-v2.c
+ * Because this is hexdumped, we represents as bytes to save space */
+uint8_t sms_hexstart[15] = { 0x00, 0x11, 0x00, 0x0C, 0x91, 
+                             ph(1), ph(2), ph(3), ph(4), ph(5), ph(6),
+                             0x00, 0x00, 0xAA, 0x4B };
+
+uint8_t  sms_state, sms_substate, sms_tempbits;
 uint16_t sms_temp;             /* Used when constructing the message octets */
 
 ISR (USART_UDRE_vect)
 {
-  /* TODO UDRIE interrupt; sms.c */
+  uint16_t c;
+
+  switch (sms_state)
+  {
+    case sms_state_cmdstart:
+      UDR0 = sms_cmdstart[sms_substate];
+      sms_substate++;
+
+      if (sms_substate == sizeof(sms_cmdstart))
+      {
+        sms_substate = 0;
+        sms_state++;
+      }
+      break;
+
+    case sms_state_hexstart_a:
+      UDR0 = hexdump_a(sms_hexstart[sms_substate]);
+      sms_state++;
+      break;
+
+    case sms_state_hexstart_b:
+      UDR0 = hexdump_b(sms_hexstart[sms_substate]);
+      sms_substate++;
+
+      if (sms_substate == sizeof(sms_hexstart))
+      {
+        sms_state++;
+        sms_substate = 0;
+        sms_temp = 0;
+        sms_tempbits = 0;
+      }
+      else
+      {
+        sms_state--;
+      }
+      break;
+
+    case sms_state_messagehex_a:
+      /* Fill up the current byte with data - add bit-chunks of 7 until
+       * we have more than eight. Also don't go over 75 chars. 
+       * For the number 75, See size hardcode note above */
+      while (sms_tempbits < 8 && sms_substate != 75)
+      {
+        c = messages_get_char(&sms_data, message_type_sms);
+
+        if (c == 0) 
+        {
+          c = ' ';   /* If it's ended, just add spaces */
+        }
+
+        /* sms_tempbits represents how many bits we've already written to
+         * the first byte of sms_tempbits. We shift left to align c to the
+         * empty space. We can shift left far enough as it's been cast to 
+         * uint16_t */
+        sms_temp |= c << sms_tempbits;
+
+        sms_tempbits += 7;
+	sms_substate++;
+      }
+
+      /* Start sending the first byte of sms_temp */
+      UDR0 = hexdump_a( sms_temp );
+      sms_state++;
+
+      break;
+
+    case sms_state_messagehex_b:
+      UDR0 = hexdump_b( sms_temp );
+
+      /* See size hardcode note above */
+      if (sms_substate != 75)
+      {
+        sms_state--;
+
+        /* Get rid of the byte we have just sent, keep MSB as there
+         * may be bits set in it */
+        sms_tempbits -= 8;
+        sms_temp = sms_temp >> 8;
+      }
+      else
+      {
+        sms_state++;
+        sms_substate = 0;
+      }
+
+      break;
+
+    case sms_state_ctrlz:
+      UDR0 = 0x1a;
+      sms_state++;
+      break;
+  }
 }
 
 /* It's not an _init like the other ones, because it's only called when sms.c
@@ -66,7 +175,8 @@ void sms_setup()
   /* gps.c will have set up for 8bit chars */
 
   /* Prepare to send... */
-  
+  sms_state    = sms_state_cmdstart;
+  sms_substate = 0;
 
   /* UBRR = F_CPU/(16 * baudrate) - 1 
    *      = 16000000/16b - 1
