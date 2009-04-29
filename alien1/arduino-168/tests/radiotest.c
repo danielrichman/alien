@@ -54,7 +54,7 @@ ISR (TIMER1_COMPA_vect)
   radio_proc();
 }
 
-uint8_t messages_get_char(payload_message *data, uint8_t message_type)
+uint8_t messages_get_char(payload_message *data)
 {
   #ifdef TEST_CHAR
   return 'U';   /* 0b01010101 */

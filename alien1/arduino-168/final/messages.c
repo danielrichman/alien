@@ -36,8 +36,7 @@
 
 /* $$A1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<N-LATITUDE DD.DDDDDD>,
  * <E-LONGITUDE DDD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FIX_AGE_HEXDUMP>,
- * <GPS_SAT_COUNT><TEMPERATURE_HEXDUMP>,<SYSTEM_STATE_DATA_HEXDUMP>,
- * *<CHECKSUM><NEWLINE> */
+ * <GPS_SAT_COUNT>,<TEMPERATURE_HEXDUMP>,*<CHECKSUM><NEWLINE> */
 
 /* Message Buffers: see messages.h for more info */
 payload_message latest_data, log_data, radio_data, sms_data;
@@ -52,10 +51,9 @@ payload_message latest_data, log_data, radio_data, sms_data;
 #define message_send_field_gpsfixage   6
 #define message_send_field_gpssatc     7
 #define message_send_field_temperature 8
-#define message_send_field_sysdata     9   /* skip for radio/sms */
-#define message_send_field_checksum    10
-#define message_send_field_nl          11
-#define message_send_field_end         12
+#define message_send_field_checksum    9
+#define message_send_field_nl          10
+#define message_send_field_end         11
 
 /* payload_message.message_send_fstate */
 #define message_send_fstate_gpstime_hh      0
@@ -92,7 +90,7 @@ uint16_t powten[5] = { 1, 10, 100, 1000, 10000 };
 #define scopy_type_hexdump  0x04
 
 /* Gets the next character to send */
-uint8_t messages_get_char(payload_message *data, uint8_t message_type)
+uint8_t messages_get_char(payload_message *data)
 {
   uint8_t c;       /* Char to return     */
   div_t divbuf;    /* Temporary divide result storage */
@@ -239,18 +237,6 @@ uint8_t messages_get_char(payload_message *data, uint8_t message_type)
       scopyba(data->system_temp, scopy_type_hexdump)
       break;
 
-    case message_send_field_sysdata:
-      if (message_type == message_type_log)
-      {
-        scopyba(data->system_state, scopy_type_hexdump)
-        break;
-      }
-
-      /* else: break isn't called, so runs onto here */
-      /* Skip this field when not writing to SD card log */
-      data->message_send_field++;
-      /* Don't break, move straight onto the next one... */
-
     case message_send_field_checksum:
       switch (data->message_send_fstate)
       {
@@ -361,7 +347,6 @@ void messages_push()
   if (/* log.c is ready for a message */0)
   {
     log_data = latest_data;
-    latest_data.system_state.data_lines_logged++;
     /* TODO: intiate logging process */
   }
 

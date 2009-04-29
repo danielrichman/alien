@@ -52,7 +52,7 @@
  * See trunk/misc-c/sms-example-v2.c                  */
 /* NOTE: We hardcode the maximum length that it could be, then if it falls
  * short we pad with spaces. The current maximum (from messages.c) is about
- * 69, for safety we'll say 75. That makes 66 message octets, and therefore
+ * 70, for safety we'll say 75. That makes 66 message octets, and therefore
  * 60 + 14 total command octets. NOTE also that the number 66 is mentioned
  * below! (in sms_state_messagehex_b) */
 uint8_t sms_cmdstart[25] = { '\r', '\n', 'A',  'T',  '+',  'C',  'M',  'G', 
@@ -117,7 +117,7 @@ ISR (USART_UDRE_vect)
        * For the number 75, See size hardcode note above */
       while (sms_tempbits < 8 && sms_substate != 75)
       {
-        c = messages_get_char(&sms_data, message_type_sms);
+        c = messages_get_char(&sms_data);
 
         if (c == 0) 
         {

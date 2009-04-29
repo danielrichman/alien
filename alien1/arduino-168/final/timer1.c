@@ -97,7 +97,6 @@ ISR (TIMER1_COMPA_vect)
       {
         /* Every five minutes ... */
         sms_data = latest_data;
-        latest_data.system_state.SMSes_sent++;
 
         timer1_minute_counter = 0;
         timer1_want_to_send_sms = 1;

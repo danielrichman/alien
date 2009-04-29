@@ -28,7 +28,7 @@ payload_message sms_data;
 
 volatile uint8_t msg_has_finished;
 
-uint8_t messages_get_char(payload_message *data, uint8_t type)
+uint8_t messages_get_char(payload_message *data)
 {
   uint8_t c;
 

@@ -80,7 +80,7 @@ void radio_proc()
       /* Defaults to the required mark */
 
       /* Try to get a new char... */
-      radio_char = messages_get_char(&radio_data, message_type_radio);
+      radio_char = messages_get_char(&radio_data);
 
       if (radio_char != 0)
       {
@@ -140,7 +140,7 @@ void radio_init()
  * and signals to the radio that it should start TXing       */
 void radio_send()
 {
-  radio_char  = messages_get_char(&radio_data, message_type_radio);
+  radio_char  = messages_get_char(&radio_data);
   radio_state = radio_state_start_bit;
 }
 

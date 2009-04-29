@@ -23,8 +23,7 @@
 
 /* $$A1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<N-LATITUDE DD.DDDDDD>,
  * <E-LONGITUDE DDD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FIX_AGE_HEXDUMP>,
- * <GPS_SAT_COUNT><TEMPERATURE_HEXDUMP>,<SYSTEM_STATE_DATA_HEXDUMP>,
- * *<CHECKSUM><NEWLINE> */
+ * <GPS_SAT_COUNT>,<TEMPERATURE_HEXDUMP>,*<CHECKSUM><NEWLINE> */
 
 /* GPS data struct */
 #define gps_cflag_north  0x01
@@ -52,19 +51,6 @@ typedef struct
   uint16_t external_temperature;
 } temperature_data;
 
-/* Data string struct */
-#define payload_status_ascending   0x01
-#define payload_status_descending  0x02
-#define payload_status_landed      0x04   /* ... etc. TODO */
-
-typedef struct
-{
-  uint16_t payload_status;       /* Flying, descending, shots/sec, etc. */
-  uint16_t photos_taken;
-  uint16_t SMSes_sent;
-  uint16_t data_lines_logged;
-} payload_state_data;
-
 /* Message structure */
 typedef struct
 {
@@ -73,9 +59,6 @@ typedef struct
   gps_information system_location;  /* Is already in ASCII, except 
 				     * for the 'flags' field */
   temperature_data system_temp;     /* Hexdump this */
-
-  payload_state_data system_state;  /* Fully Hexdumped - only dump this in
-                                     * the logs, not the radio or SMS */
 
   uint8_t message_send_field;       /* These help out the message.c */
   uint8_t message_send_fstate;      /* get_char routines */
@@ -91,13 +74,8 @@ extern payload_message  radio_data;  /* Copied from log data whenever
                                       * the radio is ready */
 extern payload_message    sms_data;  /* Sent very rarely */
 
-/* message_types */
-#define message_type_log    0x00
-#define message_type_radio  0x04
-#define message_type_sms    0x08
-
 /* Prototypes */
-uint8_t messages_get_char(payload_message *data, uint8_t message_type);
+uint8_t messages_get_char(payload_message *data);
 void messages_push();
 
 #endif 

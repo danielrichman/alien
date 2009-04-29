@@ -80,7 +80,7 @@ ISR (TIMER1_COMPA_vect)
 
     do
     {
-      c = messages_get_char(&radio_data, message_type_radio);
+      c = messages_get_char(&radio_data);
       send_char(c);
     }
     while (c != 0);
