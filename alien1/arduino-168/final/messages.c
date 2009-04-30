@@ -31,7 +31,7 @@
 #include "temperature.h"  
 #include "timer1.h"
 
-/* NOTE: messages.c has a hardcoded max-length for messages. If the format
+/* NOTE: messages.h has a hardcoded max-length for messages. If the format
  * is changed, you must update it */
 
 /* $$A1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<N-LATITUDE DD.DDDDDD>,

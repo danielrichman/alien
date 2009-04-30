@@ -25,6 +25,8 @@
  * <E-LONGITUDE DDD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FIX_AGE_HEXDUMP>,
  * <GPS_SAT_COUNT>,<TEMPERATURE_HEXDUMP>,*<CHECKSUM><NEWLINE> */
 
+#define messages_max_length 75
+
 /* GPS data struct */
 #define gps_cflag_north  0x01
 #define gps_cflag_south  0x02

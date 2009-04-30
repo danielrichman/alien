@@ -36,7 +36,7 @@ headers := $(wildcard *.h)
 	$(avr_gcc) -c $(CFLAGS) -o $@ $<
 
 $(ANM).elf : $(objects)
-	$(avr_gcc) $(CFLAGS) -o $@ $(objects)
+	$(avr_gcc)    $(CFLAGS) -o $@ $(objects)
 
 $(ANM).hex : $(ANM).elf
 	$(avr_objcopy) -O ihex $< $@

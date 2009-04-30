@@ -50,15 +50,27 @@
 
 /* Static data - always the same for every sms sent.
  * See trunk/misc-c/sms-example-v2.c                  */
+
 /* NOTE: We hardcode the maximum length that it could be, then if it falls
- * short we pad with spaces. The current maximum (from messages.c) is about
- * 70, for safety we'll say 75. That makes 66 message octets, and therefore
- * 60 + 14 total command octets. NOTE also that the number 66 is mentioned
- * below! (in sms_state_messagehex_b) */
+ * short we pad with spaces. */
+/* Calculate the octet count from the max length. The huge #define should be
+ * eva */
+#define sms_no_of_msg_bits          (messages_max_length * 7)
+#define sms_no_of_part_octet_bits   (sms_no_of_msg_bits % 8)
+#define sms_no_of_msg_bits_8        (sms_no_of_part_octet_bits == 0 ?        \
+                                        sms_no_of_msg_bits :                 \
+                                        sms_no_of_msg_bits +                 \
+                                           (8 - sms_no_of_part_octet_bits))
+#define sms_no_of_msg_octets        (sms_no_of_msg_bits_8 / 8)
+#define sms_no_of_octets            (sms_no_of_msg_octets + 14)
+#define sms_no_of_octets_d1         ('0' + (sms_no_of_octets / 10))
+#define sms_no_of_octets_d2         ('0' + (sms_no_of_octets % 10))
+
 uint8_t sms_cmdstart[25] = { '\r', '\n', 'A',  'T',  '+',  'C',  'M',  'G', 
                              'F',  '=',  '0',  '\r', '\n', 'A',  'T',  '+',
-                             'C',  'M',  'G',  'S',  '=',  '8',  '0',  '\r',
-                             '\n'                                            };
+                             'C',  'M',  'G',  'S',  '=',  
+                             sms_no_of_octets_d1,  sms_no_of_octets_d2, 
+                             '\r', '\n'                                    };
 
 /* This is the first bit of the hexstring, before the message data. 
  * 0011000C91xxxxxxxxxxxx0000AAyy  where xx...xx is the phone number,
@@ -67,7 +79,7 @@ uint8_t sms_cmdstart[25] = { '\r', '\n', 'A',  'T',  '+',  'C',  'M',  'G',
  * Because this is hexdumped, we represents as bytes to save space */
 uint8_t sms_hexstart[15] = { 0x00, 0x11, 0x00, 0x0C, 0x91, 
                              ph(1), ph(2), ph(3), ph(4), ph(5), ph(6),
-                             0x00, 0x00, 0xAA, 0x4B };
+                             0x00, 0x00, 0xAA, messages_max_length };
 
 uint8_t  sms_state, sms_substate, sms_tempbits;
 uint16_t sms_temp;             /* Used when constructing the message octets */
