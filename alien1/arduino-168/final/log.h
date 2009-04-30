@@ -15,36 +15,9 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
-#include <stdint.h>
-#include <stdlib.h>
+#ifndef ALIEN_LOG_HEADER
+#define ALIEN_LOG_HEADER
 
-#include "camera.h"
-#include "gps.h"  
-#include "hexdump.h"
-#include "log.h"
-#include "main.h"
-#include "messages.h"  
-#include "radio.h" 
-#include "sms.h"
-#include "temperature.h"  
-#include "timer1.h"
+/* TODO: see log.c */
 
-int main()
-{
-  /* Setup everything (except SMS which competes with gps for 
-   * the UART, is only enabled when it is needed */
-  radio_init();
-  gps_init();
-  temperature_init();
-  timer1_init();
-
-  /* Interrupts on */
-  sei();
-
-  /* Now sleep */
-  for (;;)    sleep_mode();
-}
-
+#endif 
