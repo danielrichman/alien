@@ -18,6 +18,7 @@
 #ifndef ALIEN_CAMERA_HEADER
 #define ALIEN_CAMERA_HEADER
 
-/* TODO: see camera.c */
+void camera_proc();
+void camera_init();
 
 #endif 

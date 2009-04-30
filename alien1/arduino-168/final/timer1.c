@@ -70,6 +70,7 @@ ISR (TIMER1_COMPA_vect)
     timer1_fifty_counter = 0;
 
     /* Somethings to do each second: */
+    camera_proc();                             /* Take pictures */
     messages_push();                           /* Push Messages */
     latest_data.system_location.fix_age++;     /* Increment Age */
 

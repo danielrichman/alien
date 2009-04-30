@@ -34,17 +34,21 @@
 
 int main()
 {
+  /* Interrupts off until we're ready to roll */
+  cli();
+
   /* Setup everything (except SMS which competes with gps for 
    * the UART, is only enabled when it is needed */
-  radio_init();
+  camera_init();
   gps_init();
-  temperature_init();
+  radio_init();
   timer1_init();
+  temperature_init();
 
-  /* Interrupts on */
+  /* Interrupts on - go go go! */
   sei();
 
-  /* Now sleep */
+  /* Now sleep - the whole program is interrupt driven */
   for (;;)    sleep_mode();
 }
 
