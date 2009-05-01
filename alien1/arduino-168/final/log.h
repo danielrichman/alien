@@ -18,6 +18,11 @@
 #ifndef ALIEN_LOG_HEADER
 #define ALIEN_LOG_HEADER
 
-/* TODO: see log.c */
+#define log_state_null     0
+
+extern uint8_t log_state;
+
+void log_start();
+void log_init();
 
 #endif 

@@ -32,5 +32,18 @@
 #include "temperature.h"  
 #include "timer1.h"
 
-/* TODO: log.c */
+uint8_t log_state;
+
+/* TODO: log.c: add ISR */
+
+void log_start()
+{
+  /* TODO: log.c: log_start() */
+  /* log_state++; */
+}
+
+void log_init()
+{
+  /* TODO: log.c: log_init() */
+}
 

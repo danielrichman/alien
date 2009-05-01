@@ -345,10 +345,10 @@ void messages_push()
     radio_send();               /* Go go go! */
   }
 
-  if (/* log.c is ready for a message */0)
+  if (log_state == log_state_null)
   {
     log_data = latest_data;
-    /* TODO: intiate logging process */
+    log_start();
   }
 
   latest_data.message_id++;
