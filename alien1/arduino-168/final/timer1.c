@@ -52,8 +52,12 @@ uint8_t timer1_uart_idle_counter, timer1_want_to_send_sms;
 uint8_t timer1_fifty_counter, timer1_second_counter, timer1_minute_counter;
 uint8_t timer1_temperature_counter;
 
-/* TODO: Perhaps some sort of watch dog? Check if one of the modules is 
- * TODO: failing (ie. hasn't provided an update in ages) and kick it? */
+/* TODO: Perhaps some sort of watch dog?
+ * Setup the hardware WDT and reset it in our 50hz interrupt, so if one 
+ * of the modules locks up we can grab it
+ * Furthermore, perhaps every minute we could have a watchdog-check-module
+ * that checks the age on the GPS, age on the temp etc. to see if it's 
+ * failing to get a fix and powercycle it or something. */
 
 /* 50hz timer interrupt */
 ISR (TIMER1_COMPA_vect)
