@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 int main(int argc, char **argv)
 {
@@ -182,6 +183,9 @@ int main(int argc, char **argv)
   fprintf(output_device, "AT+CMGF=0\r\n");
   fflush(output_device);
 
+  /* Wait a bit */
+  sleep(1);
+
   /* Ready to roll. Lets construct the AT command */
   /* The integer is the total number of octets in the hex coming up,
    * excluding the first two zeros. */
@@ -194,6 +198,9 @@ int main(int argc, char **argv)
    *      14 + sms_string_length */
   fprintf(output_device, "AT+CMGS=%i\r\n", 14 + sms_string_length);
   fflush(output_device);
+
+  /* Wait a bit */
+  sleep(1);
 
   /* Now we need to send the hex-encoded gory bits. */
 
@@ -221,9 +228,15 @@ int main(int argc, char **argv)
   for (i = 0; i < sms_string_length; i++)
     fprintf(output_device, "%.2X", sms_string[i]);
 
+  /* Wait a bit */
+  sleep(1);
+
   /* Now we send a CTRL-Z; ASCII decimal 26 or 0x1a. */
   fprintf(output_device, "%c", 0x1a);
   fflush(output_device);
+
+  /* Wait a bit */
+  sleep(1);
 
   /* All done. Close the device */
   fclose(output_device);
