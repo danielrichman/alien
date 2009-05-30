@@ -72,6 +72,9 @@ uint8_t messages_get_char(payload_message *data)
 
 int main(void)
 {
+       /* Setup radio input outputs */
+  radio_init();
+
        /* Setup timer to 50hz (from timer1.c) */
   /* Clear the timer counter */
   TCNT1  = 0;

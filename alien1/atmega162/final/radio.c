@@ -32,8 +32,8 @@
 #include "temperature.h"  
 #include "timer1.h"
 
-/* The radio will be on gpio 4 and 3.
- * Arduino gpio4 = Port D, PD4; gpio3 = Port D, PD3 */
+/* The radio will be on gpio 0 and 1.
+ * Arduino gpio0 = Port B, PB0; gpio1 = Port B, PB1 */
 
 /* radio_state #defines are in radio.h */
 
@@ -114,27 +114,27 @@ void radio_proc()
 
   if (rb)
   {
-    /* Mark:  PD4 on PD3 off */
-    PORTD &= ~(_BV(PD3));
-    PORTD |=   _BV(PD4);
+    /* Mark:  PB0 on PB1 off */
+    PORTB &= ~(_BV(PB1));
+    PORTB |=   _BV(PB0);
   }
   else 
   {
-    /* Space: PD3 on PD4 off */
-    PORTD &= ~(_BV(PD4));
-    PORTD |=   _BV(PD3);
+    /* Space: PB1 on PB0 off */
+    PORTB &= ~(_BV(PB0));
+    PORTB |=   _BV(PB1);
   }
 }
 
 void radio_init()
 {
        /* Setup Radio Outputs */
-  DDRD  |= _BV(DDD4);     /* Set portD, pin4 as an output.   */
-  DDRD  |= _BV(DDD3);     /* Set portD, pin3 as an output.   */
+  DDRB  |= _BV(DDB0);     /* Set portB, pin0 as an output.   */
+  DDRB  |= _BV(DDB1);     /* Set portB, pin1 as an output.   */
 
        /* Idle state = mark   */
-  PORTD &= ~(_BV(PD3));
-  PORTD |=   _BV(PD4);
+  PORTB &= ~(_BV(PB1));
+  PORTB |=   _BV(PB0);
 }
 
 /* This function is called after placing data in radio_data,

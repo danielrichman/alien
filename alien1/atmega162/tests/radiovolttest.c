@@ -23,10 +23,10 @@
 /* make -sBj5 radiovolttest.hex.upload */
 
 /* From radio.c */
-#define RADIO_MARK  PORTD &= ~(_BV(PD3));    /* PD4 on PD3 off */  \
-                    PORTD |=   _BV(PD4);
-#define RADIO_SPACE PORTD &= ~(_BV(PD4));    /* PD3 on PD4 off */  \
-                    PORTD |=   _BV(PD3);
+#define RADIO_MARK  PORTB &= ~(_BV(PD1));    /* PB0 on PB1 off */  \
+                    PORTB |=   _BV(PD0);
+#define RADIO_SPACE PORTB &= ~(_BV(PD0));    /* PB1 on PB0 off */  \
+                    PORTB |=   _BV(PD1);
 
 uint8_t i;
 
@@ -34,13 +34,11 @@ ISR (TIMER1_COMPA_vect)
 {
   if (i == 0)
   {
-    PORTB &= ~_BV(PB5);
     RADIO_SPACE;
     i = 1;
   }
   else
   {
-    PORTB |= _BV(PB5);
     RADIO_MARK;
     i = 0;
   }
@@ -49,10 +47,8 @@ ISR (TIMER1_COMPA_vect)
 int main(void)
 {
        /* Setup IO */
-  DDRB  |= _BV(DDB5);     /* Put PB5 as an output (pin13) */
-
-  DDRD  |= _BV(DDD4);     /* Set portD, pin4 as an output.   */
-  DDRD  |= _BV(DDD3);     /* Set portD, pin3 as an output.   */
+  DDRB  |= _BV(DDB0);     /* Set portB, pin0 as an output.   */
+  DDRB  |= _BV(DDB1);     /* Set portB, pin1 as an output.   */
   RADIO_MARK              /* Idle state = mark               */
 
   /* Prescaler to FCPU/1024; Clear timer on compare match *
