@@ -24,9 +24,10 @@
 #include "../final/sms.c"
 payload_message sms_data;
 
-/* make -sBj5 smstest.hex.upload && stty -F /dev/ttyUSB0 cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts && (sleep 4; echo hellohello > /dev/ttyUSB0) & cat /dev/ttyUSB0 */
+/* make -sBj5 smstest.hex.upload && stty -F /dev/ttyUSB0 cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts && cat /dev/ttyUSB0 */
 
 volatile uint8_t msg_has_finished;
+uint8_t timer_counter;
 
 uint8_t messages_get_char(payload_message *data)
 {
@@ -56,15 +57,25 @@ void gps_init()
 
 ISR (TIMER1_COMPA_vect)
 {
-  if (sms_state == sms_state_wait)
+  if (sms_waits)
   {
     sms_state++;
+    gps_init();
+    timer_counter = 1;
+  }
+  else if (sms_waitl)
+  {
+    timer_counter++;
+
+    if (timer_counter == 50)
+    {
+      sms_state++;
+    }
   }
   else if (sms_state == sms_state_end)
   {
     msg_has_finished = 0;
     sms_state = sms_state_null;
-    gps_init();
 
     sms_setup();
     UCSR0B |= _BV(RXEN0);
@@ -75,7 +86,6 @@ int main(void)
 {
        /* Initialise Stuff */
   sms_setup();
-
   UCSR0B |= _BV(RXEN0);
 
   TCNT1  = 0;

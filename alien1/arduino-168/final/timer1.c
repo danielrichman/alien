@@ -50,7 +50,7 @@ uint8_t timer1_uart_idle_counter, timer1_want_to_send_sms;
 
 /* These divide the 50hz into seconds, minutes and 5-minutes */
 uint8_t timer1_fifty_counter, timer1_second_counter, timer1_minute_counter;
-uint8_t timer1_temperature_counter;
+uint8_t timer1_temperature_counter, timer1_sms_counter;
 
 /* TODO: Perhaps some sort of watch dog?
  * Setup the hardware WDT and reset it in our 50hz interrupt, so if one 
@@ -117,15 +117,27 @@ ISR (TIMER1_COMPA_vect)
     temperature_state = temperature_state_waited;
   }
 
-  /* Deal with the sms wait-loop */
-  if (sms_state == sms_state_wait)
+  /* Deal with the sms short-wait */
+  if (sms_waits)
   {
+    /* Because the sms_sending will have been started by the last 50hz tick,
+     * and we can send 192 characters in one fiftieth of a second, then it's 
+     * safe to assume that it's done; no need to wait two 50hz ticks to be 
+     * sure. So increment the counter and start the long loop if neccessary. */
     sms_state++;
-  }
-  else if (sms_state == sms_state_end)
-  {
-    sms_state = sms_state_null;
+    timer1_sms_counter = timer1_fifty_counter;
     gps_init();
+
+    if (sms_state == sms_state_end)
+    {
+      sms_state = sms_state_null;
+    }
+  }
+
+  /* Deal with the sms long-wait loop */
+  if (sms_waitl && (timer1_sms_counter == timer1_fifty_counter))
+  {
+    timer1_want_to_send_sms = 1;
   }
 
   /* Count the silence */
@@ -155,8 +167,8 @@ ISR (TIMER1_COMPA_vect)
 
       if (timer1_want_to_send_sms == 1)
       {
-        timer1_want_to_send_sms = 0;
         sms_setup();
+        timer1_want_to_send_sms = 0;
       }
     }
   }
