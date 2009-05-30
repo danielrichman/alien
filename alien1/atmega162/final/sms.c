@@ -87,8 +87,7 @@ uint8_t sms_cmdend[]   = { 0x1a, '\r', '\n' };
 uint8_t  sms_state, sms_substate, sms_tempbits;
 uint16_t sms_temp;             /* Used when constructing the message octets */
 
-/* ISR (USART0_UDRE_vect) */
-ISR (USART_UDRE_vect)
+ISR (USART0_UDRE_vect)
 {
   uint16_t c;
 
@@ -216,8 +215,7 @@ void sms_setup()
    *      = 16000000/16b - 1
    *      = 1000000/b - 1
    *      = 1000000/9600 - 1 = 103.16667 */
-  UBRR0H = (unsigned char) (103 >> 8);
-  UBRR0L = (unsigned char)  103;
+  UBRR0L = 103;
 
   /* Enable Transmit Mode and UDR empty interrupts */
   UCSR0B = ((_BV(TXEN0)) | (_BV(UDRIE0)));

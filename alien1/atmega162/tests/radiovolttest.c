@@ -59,7 +59,7 @@ int main(void)
 
        /* Enable Timer1 */
   TCNT1   = 0;            /* Reset timer */
-  TIMSK1  = _BV(OCIE1A);  /* Enable Compare Match Interrupts */
+  TIMSK   = _BV(OCIE1A);  /* Enable Compare Match Interrupts */
   sei();                  /* Turn on interrupts */
 
        /* Sleep */

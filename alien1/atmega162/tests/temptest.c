@@ -74,13 +74,13 @@ ISR (TIMER1_COMPA_vect)
   latest_data.system_temp.external_temperature |= temperature_ubits_age;
   latest_data.system_temp.internal_temperature |= temperature_ubits_age;
 
-  PORTB ^= _BV(PB5);
+  PORTC ^= _BV(PC0);
 }
 
 int main(void)
 {
        /* Setup IO */
-  DDRB  |= _BV(DDB5);     /* Put PB5 as an output (pin13) */
+  DDRC  |= _BV(DDC0);     /* Put PB5 as an output (pin13) */
 
        /* Setup timer1 frequency as 1Hz */
   /* Prescaler to FCPU/1024; Clear timer on compare match *
@@ -93,18 +93,17 @@ int main(void)
   temperature_init();
 
        /* Setup UART */
-  UBRR0 = 207;
+  UBRR0L = 207;
   UCSR0A = 0;
   UCSR0B = ((_BV(TXEN0))  | (_BV(RXEN0)));
-  UCSR0C = ((_BV(UCSZ00)) | (_BV(UCSZ01)));
 
        /* Enable Timer1 */
-  TCNT1   = 0;            /* Reset timer */
-  TIMSK1  = _BV(OCIE1A);  /* Enable Compare Match Interrupts */
+  TCNT1  = 0;            /* Reset timer */
+  TIMSK  = _BV(OCIE1A);  /* Enable Compare Match Interrupts */
   sei();                  /* Turn on interrupts */
 
        /* Light on... */
-  PORTB |= _BV(PB5);
+  PORTC |= _BV(PC0);
 
        /* Sleep */
   for (;;) sleep_mode();

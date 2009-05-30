@@ -34,9 +34,6 @@
 
 int main()
 {
-  /* Interrupts off until we're ready to roll */
-  cli();
-
   /* Setup everything (except SMS which competes with gps for 
    * the UART, is only enabled when it is needed */
   camera_init();

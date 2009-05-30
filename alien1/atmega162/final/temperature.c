@@ -57,13 +57,13 @@ uint16_t temperature_external, temperature_internal;
 #define temperature_internal_lsb  (ba(temperature_internal))
 #define temperature_internal_msb  (ba(temperature_internal) + 1)
 
-#define TEMP_EXT_RELEASE  DDRD  &= ~(_BV(DDD6))   /* Set to input  */
-#define TEMP_EXT_PULLLOW  DDRD  |=   _BV(DDD6)    /* Set to output */
-#define TEMP_EXT_READ    (PIND  &    _BV(PIND6))  /* Read bit 6    */
+#define TEMP_EXT_RELEASE  DDRA  &= ~(_BV(DDA7))   /* Set to input  */
+#define TEMP_EXT_PULLLOW  DDRA  |=   _BV(DDA7)    /* Set to output */
+#define TEMP_EXT_READ    (PINA  &    _BV(PINA7))  /* Read bit 7    */
 
-#define TEMP_INT_RELEASE  DDRD  &= ~(_BV(DDD7))
-#define TEMP_INT_PULLLOW  DDRD  |=   _BV(DDD7)
-#define TEMP_INT_READ    (PIND  &    _BV(PIND7))
+#define TEMP_INT_RELEASE  DDRA  &= ~(_BV(DDA6))
+#define TEMP_INT_PULLLOW  DDRA  |=   _BV(DDA6)
+#define TEMP_INT_READ    (PINA  &    _BV(PINA6))
 
 #define TEMP_EXT_OK   (temperature_flags & temperature_flags_ext_ok)
 #define TEMP_INT_OK   (temperature_flags & temperature_flags_int_ok)
@@ -80,9 +80,9 @@ uint16_t temperature_external, temperature_internal;
 /* Enable timer 0, but don't configure for CTC or interrupts.
  * At FCPU/64 we can use this to perform long waits without leaving
  * the interrupt. */
-#define TEMP_BUSYWAIT_SETUP_64    TCCR0B  = ((_BV(CS00)) | _BV(CS01))
-#define TEMP_BUSYWAIT_SETUP_1     TCCR0B  = ((_BV(CS00)))
-#define TEMP_BUSYWAIT_SETUP_STOP  TCCR0B  = 0;
+#define TEMP_BUSYWAIT_SETUP_64    TCCR0  = ((_BV(CS00)) | _BV(CS01))
+#define TEMP_BUSYWAIT_SETUP_1     TCCR0  = ((_BV(CS00)))
+#define TEMP_BUSYWAIT_SETUP_STOP  TCCR0  = 0;
 
 #define TEMP_BUSYWAIT(n)      for (TCNT0 = 0; TCNT0 < (n);)
 #define TEMP_BUSYWAIT_1_us(n)    TEMP_BUSYWAIT((n) * 16)
@@ -377,12 +377,10 @@ void temperature_crcpush(uint8_t bit, uint8_t *crc)
   *crc ^= bit;
 }
 
-/* We only have to do this once. Setting it low and leaving it means that 
+/* By default the port register bits will below and leaving it means that 
  * when we put outputmode (PULLLOW) then DQ gets grounded; When we set
  * input mode (RELEASE) no extra internal pullups are turned on and
  * DQ floats high */
-#define TEMP_EXT_LOW      PORTD &= ~(_BV(PD6))
-#define TEMP_INT_LOW      PORTD &= ~(_BV(PD7))
 
 void temperature_init()
 {
@@ -390,10 +388,5 @@ void temperature_init()
    * The external 4k7 will pull it high. */
   TEMP_EXT_RELEASE;
   TEMP_EXT_RELEASE;
-  TEMP_EXT_LOW;
-  TEMP_INT_LOW;
-
-  /* This is scaled and enabled as needed */
-  TEMP_BUSYWAIT_SETUP_STOP;
 }
 

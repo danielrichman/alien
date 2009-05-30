@@ -85,8 +85,8 @@ int main(void)
    * interrupt every 1250 timer1 ticks. */
   OCR1A   = 1250;
 
-  /* TIMSK1: Enable Compare Match Interrupts (Set bit OCIE1A)*/
-  TIMSK1 |= _BV(OCIE1A);
+  /* TIMSK:  Enable Compare Match Interrupts (Set bit OCIE1A)*/
+  TIMSK  |= _BV(OCIE1A);
   /* TCCR1B: Clear timer on compare match    (Set bit WGM12) */
   TCCR1B |= _BV(WGM12);
   /* TCCR1B: Prescaler to FCPU/256 & Enable  (Set bit CS12)  */

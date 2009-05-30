@@ -61,7 +61,7 @@ uint8_t gps_sentence_mask[5] = { 'G', 'P', 'G', 'G', 'A' };
 /* Working data location - while we're recieving it goes here. */
 gps_information gps_data;
 
-ISR (USART_RX_vect)
+ISR (USART0_RXC_vect)
 {
   uint8_t i, j;  /* General purpose temporary variables, used in the for loop
                     that clears gps_data and the checksum checks.
@@ -397,14 +397,11 @@ void gps_init()
 {
   gps_state = gps_state_null;
 
-  /* Setup for 8 bit charaters */
-  UCSR0C = ((_BV(UCSZ00)) | (_BV(UCSZ01)));
-
   /* UBRR = F_CPU/(16 * baudrate) - 1 
    *      = 16000000/16b - 1
    *      = 1000000/b - 1
    *      = 1000000/4800 - 1 = 207.3333 */
-  UBRR0 = 207;
+  UBRR0L = 207;
 
   /* Enable Recieve Interrupts and UART RX mode. Don't enable TX */
   UCSR0B = ((_BV(RXCIE0)) | (_BV(RXEN0)));

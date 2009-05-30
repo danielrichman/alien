@@ -16,26 +16,37 @@
 #    For a full copy of the GNU General Public License, 
 #    see <http://www.gnu.org/licenses/>.
 
+F_CPU = 16000000
+mmcu = atmega162
+
 cfiles   := $(wildcard *.c)
 hexfiles := $(patsubst %.c,%.hex,$(cfiles))
+
+avr_gcc = avr-gcc
+avr_objcopy = avr-objcopy
+avr_size = avr-size
+avrdude = avrdude
+
+CFLAGS   = -mmcu=$(mmcu) -DF_CPU=$(F_CPU) -pipe -Wall -pedantic -O2
+MAPFLAGS = -Wl,-Map,
 
 all : $(hexfiles)
 
 %.elf : %.c
-	avr-gcc -mmcu=atmega168 -DF_CPU=16000000 -Wall -pedantic -O2 -o $@ $<
-	avr-size $@
+	$(avr_gcc)  -c $(CFLAGS) -o $@ $<
+	$(avr_size) --common $@
 
 %.hex : %.elf
-	avr-objcopy -O ihex $< $@
+	$(avr_objcopy) -O ihex $< $@
 
 %.hex.upload : %.hex
-	avrdude -V -F -C /etc/avrdude.conf \
-	        -p atmega168 -P /dev/ttyUSB0 -c stk500v1 -b 19200 \
+	$(avrdude) -p $(mmcu) -P /dev/ttyACM0 -c stk500v2 \
+	           -U flash:w:$<
 	        -U flash:w:$<
 
 clean :
 	rm -f *.hex 
 
 .PHONY : clean
-
+.DEFAULT_GOAL := all
 

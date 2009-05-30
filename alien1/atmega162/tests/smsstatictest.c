@@ -84,10 +84,10 @@ int main(void)
        /* Initialise Stuff */
   sms_setup();
 
-  TCNT1  = 0;
+  TCNT1   = 0;
   OCR1A   = 1250;
 
-  TIMSK1 |= _BV(OCIE1A);
+  TIMSK  |= _BV(OCIE1A);
   TCCR1B |= _BV(WGM12);
   TCCR1B |= _BV(CS12);
 

@@ -40,8 +40,6 @@
 #include "temperature.h"  
 #include "timer1.h"
 
-#define FLASH_LED  PORTD ^= _BV(PD5)
-
 /* We use this to work out when it's the best window of opportunity to nick
  * the UART to send a SMS. gps.c zeros  it whenever it recieves a char,
  * so if it reaches a high value we know that the UART is idle. 
@@ -57,7 +55,9 @@ uint8_t timer1_temperature_counter, timer1_sms_counter;
  * of the modules locks up we can grab it
  * Furthermore, perhaps every minute we could have a watchdog-check-module
  * that checks the age on the GPS, age on the temp etc. to see if it's 
- * failing to get a fix and powercycle it or something. */
+ * failing to get a fix and powercycle it or something. 
+ * Also, let's have an advanced status-led system - PA1 and PA0 will 
+ * connect to a tri-colour led. */
 
 /* 50hz timer interrupt */
 ISR (TIMER1_COMPA_vect)
@@ -81,9 +81,6 @@ ISR (TIMER1_COMPA_vect)
     /* Set the age bits on the temperature values */
     latest_data.system_temp.external_temperature |= temperature_ubits_age;
     latest_data.system_temp.internal_temperature |= temperature_ubits_age;
-
-    /* Just to remind everyone that we're still alive */
-    FLASH_LED;
 
     /* Increment the other counter */
     timer1_second_counter++;
@@ -185,14 +182,11 @@ void timer1_init()
    * interrupt every 1250 timer1 ticks. */
   OCR1A   = 1250;
 
-  /* TIMSK1: Enable Compare Match Interrupts (Set bit OCIE1A)*/
-  TIMSK1 |= _BV(OCIE1A);
+  /* TIMSK:  Enable Compare Match Interrupts (Set bit OCIE1A)*/
+  TIMSK  |= _BV(OCIE1A);
   /* TCCR1B: Clear timer on compare match    (Set bit WGM12) */
   TCCR1B |= _BV(WGM12);
   /* TCCR1B: Prescaler to FCPU/256 & Enable  (Set bit CS12)  */
   TCCR1B |= _BV(CS12);
-
-  /* Setup the Flashing LED : Put PD5 as an Output (pin5)    */
-  DDRD |= _BV(DDD5);
 }
 

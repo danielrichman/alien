@@ -53,10 +53,8 @@ int main(void)
   uint8_t c;
 
        /* Setup UART */
-  UBRR0 = 207;
-  UCSR0A = 0;
+  UBRR0L = 207;
   UCSR0B = ((_BV(TXEN0))  | (_BV(RXEN0)));
-  UCSR0C = ((_BV(UCSZ00)) | (_BV(UCSZ01)));
 
        /* Spam... */
   for (;;)

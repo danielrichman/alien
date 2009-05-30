@@ -32,7 +32,7 @@
 #include "temperature.h"  
 #include "timer1.h"
 
-/* NOTE: The camera is on Port C, Outputs 0 (focus) and 1 (fullshutter). */
+/* NOTE: The camera is on Port A, Outputs 3 (focus) and 2 (fullshutter). */
 
 /* How long to wait between taking photos, in seconds.
  * Cannot be < (camera_hold_focus + camera_hold_both) */
@@ -58,19 +58,19 @@ void camera_proc()
      * camera_state++ - so it's the only one that break;s */
 
     case camera_state_off:
-      PORTC &= ~((_BV(PB0))  + (_BV(PB1)));
+      PORTA &= ~((_BV(PA3)) | (_BV(PA2)));
       camera_state = 0;
       break;
 
-    /* Don't break. These stack up, ie. _both has both PB1 and PB0 set,
+    /* Don't break. These stack up, ie. _both has both PA3 and PA2 set,
      * focus has PB0 set, and both have state++ */
 
     case camera_state_both:
-      PORTC |= _BV(PB1);
-      /* Run on, over the next case, to set PB0 */
+      PORTA |= _BV(PA2);
+      /* Run on, over the next case, to set PA3 */
 
     case camera_state_focus:
-      PORTC |= _BV(PB0);
+      PORTA |= _BV(PA3);
       /* Run on to increment _state */
 
     default:
@@ -82,7 +82,7 @@ void camera_proc()
 
 void camera_init()
 {
-  PORTC &= ~((_BV(PB0))  + (_BV(PB1)));    /* Both off */
-  DDRC  |=  ((_BV(DDC0)) + (_BV(DDC1)));   /* Both outputs */
+  PORTA &= ~((_BV(PA3))  | (_BV(PA2)));    /* Both off */
+  DDRA  |=  ((_BV(DDA3)) | (_BV(DDA2)));   /* Both outputs */
 }
 

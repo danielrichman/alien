@@ -93,21 +93,21 @@ ISR (TIMER1_COMPA_vect)
     while (c != 0);
    
 
-    PORTB ^= _BV(PB5);
+    PORTC ^= _BV(PC0);
   }
 }
 
 int main(void)
 {
        /* Setup IO */
-  DDRB  |= _BV(DDB5);     /* Put PB5 as an output (pin13) */
+  DDRC  |= _BV(DDC0);     /* Put PC0 as an output (pin21) */
 
        /* Initialise Stuff */
   gps_init();
   UCSR0B |= _BV(TXEN0);
 
        /* Light on... */
-  PORTB |= _BV(PB5);
+  PORTC |= _BV(PC0);
 
        /* Setup & Enable TIMER1 at 50hz */
   /* Clear the timer counter */
@@ -119,8 +119,8 @@ int main(void)
    * interrupt every 1250 timer1 ticks. */
   OCR1A   = 1250;
 
-  /* TIMSK1: Enable Compare Match Interrupts (Set bit OCIE1A)*/
-  TIMSK1 |= _BV(OCIE1A);
+  /* TIMSK:  Enable Compare Match Interrupts (Set bit OCIE1A)*/
+  TIMSK  |= _BV(OCIE1A);
   /* TCCR1B: Clear timer on compare match    (Set bit WGM12) */
   TCCR1B |= _BV(WGM12);
   /* TCCR1B: Prescaler to FCPU/256 & Enable  (Set bit CS12)  */
