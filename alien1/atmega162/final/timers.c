@@ -47,11 +47,10 @@
  * gps.c zeros the idle counter it whenever it recieves a char, so if it 
  * reaches a high value we know that the GPS UART is idle and we can
  * start processing other things */
-uint8_t timers_uart_idle_counter, timers_want_to_send_sms;
+uint8_t timers_uart_idle_counter;
 
 /* These divide the 50hz into seconds, minutes and 5-minutes */
 uint8_t timers_fifty_counter, timers_second_counter, timers_minute_counter;
-uint8_t timers_temperature_counter, timers_sms_counter;
 
 /* TODO: Perhaps some sort of watch dog?
  * Setup the hardware WDT and reset it in our 50hz interrupt, so if one 
@@ -81,10 +80,6 @@ ISR (TIMER1_COMPA_vect)
     messages_push();                           /* Push Messages */
     latest_data.system_location.fix_age++;     /* Increment Age */
 
-    /* Set the age bits on the temperature values */
-    latest_data.system_temp.external_temperature |= temperature_ubits_age;
-    latest_data.system_temp.internal_temperature |= temperature_ubits_age;
-
     /* Increment the other counter */
     timers_second_counter++;
 
@@ -93,86 +88,83 @@ ISR (TIMER1_COMPA_vect)
       /* Reached the end of the minute */
       timers_second_counter = 0;
 
-      /* Something to do every minute */
+      /* Something to do (roughly) every minute */
       temperature_state = temperature_state_want_to_get;
 
       /* Increment the minute counter */
       timers_minute_counter++;
 
-      if (sms_state == sms_state_null && timers_minute_counter == 5)
+      if (sms_mode == sms_mode_null && timers_minute_counter == 5)
       {
         /* Every five minutes ... */
-        sms_data = latest_data;
+        timers_minute_counter   = 0;
 
-        timers_minute_counter = 0;
-        timers_want_to_send_sms = 1;
+        sms_data = latest_data;
+        sms_mode = sms_mode_rts;
       }
     }
-  }
-
-  /* Deal with temperature wait-loop */
-  if ( temperature_state == temperature_state_requested &&
-       (timers_temperature_counter == timers_fifty_counter))
-  {
-    temperature_state = temperature_state_waited;
-  }
-
-  /* Deal with the sms long-wait loop */
-  if (sms_waitmode && (timers_sms_counter == timers_fifty_counter))
-  {
-    timers_want_to_send_sms = 1;
   }
 
   /* Count the silence */
   timers_uart_idle_counter++;
 
-  if (timers_want_to_send_sms == 1 || 
-      temperature_state == temperature_state_want_to_get ||
-      temperature_state == temperature_state_waited)
+  /* I estimate that the 'safe-window' is about here */
+  if (timers_uart_idle_counter > 15 && timers_uart_idle_counter < 35)
   {
-    /* I estimate that the 'safe-window' is about here */
-    if (timers_uart_idle_counter > 15 && timers_uart_idle_counter < 35)
+    if (sms_mode == sms_mode_null || sms_mode == sms_mode_rts)
     {
-      /* Do something; but only one something */
-      timers_uart_idle_counter = 0;
-
-      if (timers_want_to_send_sms == 1)
-      {
-        sms_start();
-        timers_want_to_send_sms = 0;
-      }
-      else if (temperature_state == temperature_state_want_to_get)
+      /* Don't take temperature and while sending a sms! t3 is required */
+      if (temperature_state == temperature_state_want_to_get)
       {
         temperature_request();
-
-        /* Wait until the fifty counter gets back to its current value */
-        timers_temperature_counter = timers_fifty_counter;
       }
       else if (temperature_state == temperature_state_waited)
       {
         temperature_retrieve();
       }
-
     }
+
+    if (temperature_state == temperature_state_null && 
+        (sms_mode == sms_mode_ready || sms_mode == sms_mode_rts))
+    {
+      /* Don't start sending smses while taking temperature! */
+      sms_start();
+    }
+  }
+}
+
+/* 1hz interrupt - enabled when needed */
+ISR (TIMER3_COMPA_vect)
+{
+  /* Only tick once */
+  timers_t3_stop;
+
+  /* Update whatever we need to update */
+  if (temperature_state == temperature_state_requested)
+  {
+    temperature_state = temperature_state_waited;
+  }
+
+  if (sms_mode == sms_mode_waiting)
+  {
+    sms_mode = sms_mode_ready;
   }
 }
 
 void timers_init()
 {
-  /* Clear the timer counter */
-  TCNT1  = 0;
+  /* Note: we don't enable timer3 straight away. */
 
   /* Prescaler will be FCPU/256 (Set bit CS02). 
-   * So Timer freq will be 16000000/256 = 62500Hz
-   * We want 50Hz; 62500/50 = 1250. So we want an 
-   * interrupt every 1250 timer1 ticks. */
-  OCR1A   = 1250;
+   * So Timer freq will be 16000000/256 = 62500Hz */
+  OCR1A   = 1250;   /* 50Hz: 62500/50 = 1250 */
+  OCR3A   = 62500;  /*  1Hz */
 
-  /* TIMSK:  Enable Compare Match Interrupts (Set bit OCIE1A)*/
-  TIMSK  |= _BV(OCIE1A);
-  /* TCCR1B: Clear timer on compare match    (Set bit WGM12) */
-  TCCR1B |= _BV(WGM12);
-  /* TCCR1B: Prescaler to FCPU/256 & Enable  (Set bit CS12)  */
-  TCCR1B |= _BV(CS12);
+  /* (E)TIMSK:  Enable Compare Match Interrupts (Set bit OCIEnA) *
+   * TCCRnB:    Clear timer on compare match    (Set bit WGMn2)  *
+   * TCCRnB:    Prescaler to FCPU/256 & Enable  (Set bit CSn2)   */
+  TCCR1B  = _BV(WGM12)  | _BV(CS12);
+  TIMSK   = _BV(OCIE1A);
+  ETIMSK  = _BV(OCIE3A);
 }
 

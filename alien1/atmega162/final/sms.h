@@ -18,25 +18,25 @@
 #ifndef ALIEN_SMS_HEADER
 #define ALIEN_SMS_HEADER
 
-extern uint8_t sms_state;
+extern uint8_t sms_state, sms_mode;
 
 #define sms_state_null          0
 #define sms_state_formatcmd     1
-#define sms_state_wait_a        2
-#define sms_state_cmdstart      3
-#define sms_state_wait_b        4
-#define sms_state_hexstart_a    5
-#define sms_state_hexstart_b    6
-#define sms_state_messagehex_a  7
-#define sms_state_messagehex_b  8
-#define sms_state_cmdend        9
-#define sms_state_wait_c        10
-#define sms_state_end           11
+#define sms_state_cmdstart      2
+#define sms_state_hexstart_a    3
+#define sms_state_hexstart_b    4
+#define sms_state_messagehex_a  5
+#define sms_state_messagehex_b  6
+#define sms_state_cmdend        7
+#define sms_state_end           8
 
-#define sms_waitmode  (sms_state == sms_state_wait_a ||    \
-                       sms_state == sms_state_wait_b ||    \
-                       sms_state == sms_state_wait_c)
+#define sms_mode_null           0
+#define sms_mode_rts            1   /* request to send */
+#define sms_mode_waiting        2
+#define sms_mode_ready          3
+#define sms_mode_busy           4
 
+void sms_wait();
 void sms_start();
 void sms_init();
 

@@ -23,6 +23,12 @@
 /* gps.c needs access to this */
 extern uint8_t timers_uart_idle_counter;
 
+/* for sms.c and timers.c */
+#define timers_t3_clear        TCNT3  = 0;
+#define timers_t3_start        TCCR3B = ((_BV(CS32)) | (_BV(WGM32)));
+#define timers_t3_stop         TCCR3B = 0;
+#define timers_is_t3_started   (TCCR3B == 0)
+
 /* Prototype */
 void timers_init();
 

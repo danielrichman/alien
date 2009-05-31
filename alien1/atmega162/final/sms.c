@@ -84,7 +84,8 @@ uint8_t sms_hexstart[] = { 0x00, 0x11, 0x00, 0x0C, 0x91,
 
 uint8_t sms_cmdend[]   = { 0x1a, '\r', '\n' };
 
-uint8_t  sms_state, sms_substate, sms_tempbits;
+uint8_t  sms_state, sms_mode;
+uint8_t  sms_substate, sms_tempbits;
 uint16_t sms_temp;             /* Used when constructing the message octets */
 
 #define SMS_ENABLE_ISR   UCSR1B |=   _BV(UDRIE1);
@@ -102,10 +103,9 @@ ISR (USART1_UDRE_vect)
 
       if (sms_substate == sizeof(sms_formatcmd))
       {
-        SMS_DISABLE_ISR;
-
         sms_substate = 0;
         sms_state++;
+	sms_wait();
       }
       break;
 
@@ -115,10 +115,9 @@ ISR (USART1_UDRE_vect)
 
       if (sms_substate == sizeof(sms_cmdstart))
       {
-        SMS_DISABLE_ISR;
-
         sms_substate = 0;
         sms_state++;
+        sms_wait();
       }
       break;
 
@@ -200,13 +199,22 @@ ISR (USART1_UDRE_vect)
 
       if (sms_substate == sizeof(sms_cmdend))
       {
-        SMS_DISABLE_ISR;
-
         sms_substate = 0;
-        sms_state++;
+        sms_state = sms_state_null;
+        sms_mode  = sms_mode_null;
+        SMS_DISABLE_ISR;
       }
       break;
   }
+}
+
+void sms_wait()
+{
+  SMS_DISABLE_ISR;
+  sms_mode = sms_mode_waiting;
+
+  timers_t3_clear;
+  timers_t3_start;
 }
 
 void sms_start()
@@ -215,15 +223,8 @@ void sms_start()
    * after each wait finishes */
 
   sms_state++;
-
-  if (sms_state == sms_state_end)
-  {
-    sms_state = sms_state_null;
-  }
-  else
-  {
-    SMS_ENABLE_ISR;
-  }
+  sms_mode = sms_mode_busy;
+  SMS_ENABLE_ISR;
 }  
 
 void sms_init()

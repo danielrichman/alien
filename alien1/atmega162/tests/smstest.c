@@ -27,7 +27,6 @@ payload_message sms_data;
 /* make -sBj5 smstest.hex.upload && stty -F /dev/ttyUSB0 cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts && cat /dev/ttyUSB0 */
 
 volatile uint8_t msg_has_finished;
-uint8_t timer_counter;
 
 uint8_t messages_get_char(payload_message *data)
 {
@@ -55,34 +54,27 @@ void gps_init()
 
 }
 
-ISR (TIMER1_COMPA_vect)
+ISR (TIMER3_COMPA_vect)
 {
-  if (sms_waitmode)
+  if (sms_mode == sms_mode_waiting)
   {
-    timer_counter++;
+    sms_mode = sms_mode_ready;
 
-    if (timer_counter == 50)
-    {
-      sms_start();
-      timer_counter = 0;
-    }
+    sms_start();
   }
 }
 
+/* Basically just send one message then exit */
 int main(void)
 {
        /* Initialise Stuff */
   sms_init();
   sms_start();
 
-  UCSR0B |= _BV(RXEN0);
+  /* Note: we don't enable timer3 straight away. */
 
-  TCNT1   = 0;
-  OCR1A   = 1250;
-
-  TIMSK  |= _BV(OCIE1A);
-  TCCR1B |= _BV(WGM12);
-  TCCR1B |= _BV(CS12);
+  OCR3A   = 62500;  /*  1Hz */
+  ETIMSK  = _BV(OCIE3A);
 
   sei();
 

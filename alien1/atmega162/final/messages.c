@@ -343,12 +343,19 @@ void messages_push()
   {
     radio_data = latest_data;   /* Update the radio's copy */
     radio_send();               /* Go go go! */
+
+    /* Set the age bits on the temperature values for the next message */
+    radio_data.system_temp.external_temperature |= temperature_ubits_age;
+    radio_data.system_temp.internal_temperature |= temperature_ubits_age;
   }
 
   if (log_state == log_state_null)
   {
     log_data = latest_data;
     log_start();
+
+    radio_data.system_temp.external_temperature |= temperature_ubits_age;
+    radio_data.system_temp.internal_temperature |= temperature_ubits_age;
   }
 
   latest_data.message_id++;

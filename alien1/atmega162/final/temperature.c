@@ -112,8 +112,11 @@ void temperature_request()
   temperature_writebyte(convtemp_cmd);
 
   /* Return to timers.c; it will bring control back here when a second has
-   * passed. */
+   * passed. Also, timers.c guarantees that temperature will not have been
+   * started while timer3 is in use by sms.c */
   temperature_state = temperature_state_requested;
+  timers_t3_clear;
+  timers_t3_start;
 }
 
 void temperature_retrieve()
