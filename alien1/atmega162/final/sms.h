@@ -18,6 +18,8 @@
 #ifndef ALIEN_SMS_HEADER
 #define ALIEN_SMS_HEADER
 
+#include <stdint.h>
+
 extern uint8_t sms_state, sms_mode;
 
 #define sms_state_null          0

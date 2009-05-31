@@ -22,16 +22,18 @@
 #include <stdlib.h>
 
 #include "camera.h"
-#include "gps.h"  
+#include "gps.h"
 #include "hexdump.h"
 #include "log.h"
 #include "main.h"
-#include "messages.h"  
-#include "radio.h" 
+#include "messages.h"
+#include "radio.h"
 #include "sms.h"
-#include "temperature.h"  
+#include "statusled.h"
+#include "temperature.h"
 #include "timer1.h"
 #include "timer3.h"
+#include "watchdog.h"
 
 /* NOTE: messages.h has a hardcoded max-length for messages. If the format
  * is changed, you must update it */
@@ -344,19 +346,12 @@ void messages_push()
   {
     radio_data = latest_data;   /* Update the radio's copy */
     radio_send();               /* Go go go! */
-
-    /* Set the age bits on the temperature values for the next message */
-    radio_data.system_temp.external_temperature |= temperature_ubits_age;
-    radio_data.system_temp.internal_temperature |= temperature_ubits_age;
   }
 
   if (log_state == log_state_null)
   {
     log_data = latest_data;
     log_start();
-
-    radio_data.system_temp.external_temperature |= temperature_ubits_age;
-    radio_data.system_temp.internal_temperature |= temperature_ubits_age;
   }
 
   latest_data.message_id++;

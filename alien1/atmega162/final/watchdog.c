@@ -35,29 +35,17 @@
 #include "timer3.h"
 #include "watchdog.h"
 
-/* 1hz interrupt - enabled when needed */
-ISR (TIMER3_COMPA_vect)
+void watchdog_init()
 {
-  /* Only tick once */
-  timer3_stop();
+  /* Grab the source of the reset and log it: bits 3..0 in MCUCSR 
+   * (Ignore JTAG) */
+  log_header = MCUCSR & ((_BV(WDRF))  | (_BV(BORF)) | 
+                         (_BV(EXTRF)) | (_BV(PORF)));
 
-  /* Update whatever we need to update */
-  if (temperature_state == temperature_state_requested)
-  {
-    temperature_state = temperature_state_waited;
-  }
+  /* Now reset the status register */
+  MCUCSR = 0;
 
-  if (sms_mode == sms_mode_waiting)
-  {
-    sms_mode = sms_mode_ready;
-  }
-}
-
-/* Note: we don't enable timer3 straight away. */
-void timer3_init()
-{
-  /* For info, see timer1.c _init notes */
-  OCR3A   = 62500;  /*  1Hz */
-  ETIMSK  = _BV(OCIE3A);
+  /* Setup for a 2.1 second watchdog reset */
+  WDTCR = ((_BV(WDE)) | (_BV(WDP2)) | (_BV(WDP1)) | (_BV(WDP0)));
 }
 

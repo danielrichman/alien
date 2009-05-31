@@ -22,18 +22,23 @@
 #include <stdlib.h>
 
 #include "camera.h"
-#include "gps.h"  
+#include "gps.h"
 #include "hexdump.h"
 #include "log.h"
 #include "main.h"
-#include "messages.h"  
-#include "radio.h" 
+#include "messages.h"
+#include "radio.h"
 #include "sms.h"
-#include "temperature.h"  
+#include "statusled.h"
+#include "temperature.h"
 #include "timer1.h"
 #include "timer3.h"
+#include "watchdog.h"
 
-uint8_t log_state;
+/* Log header can be changed by any modules during initialisation.
+ * It's the first byte sent to the SD card - could contain reset info,
+ * for example */
+uint8_t log_state, log_header;
 
 /* TODO: log.c: add ISR */
 

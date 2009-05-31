@@ -18,6 +18,8 @@
 #ifndef ALIEN_TEMPERATURE_HEADER
 #define ALIEN_TEMPERATURE_HEADER
 
+#include <stdint.h>
+
 /* Global status variables & defines */
 extern uint8_t temperature_state;
 
@@ -27,8 +29,10 @@ extern uint8_t temperature_state;
 #define temperature_state_waited          3
 
 /* Bits in the MSB of the temperature to signal things (they arn't used) */
-#define temperature_ubits_age             0x8000
-#define temperature_ubits_err             0x4000
+#define temperature_ubits_toggle_a        0x8000
+#define temperature_ubits_toggle_b        0x4000
+#define temperature_ubits_err             0x2000
+#define temperature_ubits_valid           0x1000
 
 /* Prototypes */
 void temperature_request();
@@ -38,6 +42,5 @@ void temperature_writebyte(uint8_t db);
 void temperature_readbyte(uint8_t *ext_target, uint8_t *int_target);
 uint8_t temperature_readbit();
 void temperature_crcpush(uint8_t bit, uint8_t *crc);
-void temperature_init();
 
 #endif 

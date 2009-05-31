@@ -22,16 +22,18 @@
 #include <stdlib.h>
 
 #include "camera.h"
-#include "gps.h"  
+#include "gps.h"
 #include "hexdump.h"
 #include "log.h"
 #include "main.h"
-#include "messages.h"  
-#include "radio.h" 
+#include "messages.h"
+#include "radio.h"
 #include "sms.h"
-#include "temperature.h"  
+#include "statusled.h"
+#include "temperature.h"
 #include "timer1.h"
 #include "timer3.h"
+#include "watchdog.h"
 
 /* Deal with phone number hardcoding privacy */
 #include "phone_no_private.h"

@@ -22,16 +22,18 @@
 #include <stdlib.h>
 
 #include "camera.h"
-#include "gps.h"  
+#include "gps.h"
 #include "hexdump.h"
 #include "log.h"
 #include "main.h"
-#include "messages.h"  
-#include "radio.h" 
+#include "messages.h"
+#include "radio.h"
 #include "sms.h"
-#include "temperature.h"  
+#include "statusled.h"
+#include "temperature.h"
 #include "timer1.h"
 #include "timer3.h"
+#include "watchdog.h"
 
 /* We will have temperature sensors on GPIO6 and GPIO7 (PD6 and PD7) - 
  * While I appreciate that you can have more sensors on one 1wire, we're
@@ -197,10 +199,39 @@ void temperature_retrieve()
   /* BIT_CLEAR */
   /* Clear the two most significant bits in temp_ba[1], so that we can use
    * them to signal age or invalidness. */
-  temperature_external &= ~(temperature_ubits_age | 
+  temperature_external &= ~(temperature_ubits_toggle_a | 
+                            temperature_ubits_toggle_b | 
                             temperature_ubits_err);
-  temperature_internal &= ~(temperature_ubits_age | 
+  temperature_internal &= ~(temperature_ubits_toggle_a | 
+                            temperature_ubits_toggle_b | 
                             temperature_ubits_err);
+
+  /* BIT_SET */
+  /* Always set this bit to signal that it is actually a real temperature.
+   * Since the latest_data will be initialised to zero, then using this
+   * statusled.c can tell if temperature.c is working */
+  temperature_external |= temperature_ubits_valid;
+  temperature_internal |= temperature_ubits_valid;
+
+  /* We swap between setting toggle_a and toggle_b, so that it can be detected
+   * in the radio and the log when the value is read or changed. */
+  if (latest_data.system_temp.external_temperature & temperature_ubits_toggle_a)
+  {
+    temperature_external |= temperature_ubits_toggle_b;
+  }
+  else
+  {
+    temperature_external |= temperature_ubits_toggle_a;
+  }
+
+  if (latest_data.system_temp.internal_temperature & temperature_ubits_toggle_a)
+  {
+    temperature_internal |= temperature_ubits_toggle_b;
+  }
+  else
+  {
+    temperature_internal |= temperature_ubits_toggle_a;
+  }
 
   /* TEMP_SAVE */
   if (TEMP_EXT_OK)
@@ -385,12 +416,4 @@ void temperature_crcpush(uint8_t bit, uint8_t *crc)
  * when we put outputmode (PULLLOW) then DQ gets grounded; When we set
  * input mode (RELEASE) no extra internal pullups are turned on and
  * DQ floats high */
-
-void temperature_init()
-{
-  /* Initialise the 1wire as released, don't turn on internal pullups.
-   * The external 4k7 will pull it high. */
-  TEMP_EXT_RELEASE;
-  TEMP_EXT_RELEASE;
-}
 

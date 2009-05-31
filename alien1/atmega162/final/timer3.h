@@ -18,9 +18,10 @@
 #ifndef ALIEN_TIMER3_HEADER
 #define ALIEN_TIMER3_HEADER
 
+#include <avr/io.h>
 #include <stdint.h>
 
-/* for sms.c and timers.c */
+/* One-liner functions */
 #define timer3_clear()   TCNT3  = 0;
 #define timer3_start()   TCCR3B = ((_BV(CS32)) | (_BV(WGM32)));
 #define timer3_stop()    TCCR3B = 0;

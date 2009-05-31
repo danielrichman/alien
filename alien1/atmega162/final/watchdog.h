@@ -15,14 +15,20 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ALIEN_LOG_HEADER
-#define ALIEN_LOG_HEADER
+#ifndef ALIEN_WATCHDOG_HEADER
+#define ALIEN_WATCHDOG_HEADER
 
-#define log_state_null     0
+#include <avr/io.h>
 
-extern uint8_t log_state, log_header;
+/* We don't use AVR-LIBC's implementation of this because we don't need the
+ * handling of sreg and interrupts etc. */
 
-void log_start();
-void log_init();
+/* Reset the WDT */
+#define watchdog_reset() __asm__ __volatile__ ("wdr")
+
+/* Prototype */
+void watchdog_init();
 
 #endif 
+
+

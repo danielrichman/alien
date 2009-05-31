@@ -15,14 +15,11 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ALIEN_LOG_HEADER
-#define ALIEN_LOG_HEADER
+#ifndef ALIEN_STATUSLED_HEADER
+#define ALIEN_STATUSLED_HEADER
 
-#define log_state_null     0
-
-extern uint8_t log_state, log_header;
-
-void log_start();
-void log_init();
+/* Prototypes */
+void statusled_proc();
+void statusled_init();
 
 #endif 

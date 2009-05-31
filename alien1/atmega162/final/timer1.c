@@ -15,14 +15,6 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-/* TIMER1 is used for many things. It is set up to generate a 50hz interrupt,
- * and each time it does interrupt radio_proc gets a call. Furthermore, every 
- * fifty interrupts ( = one second) the messages.c system gets a call, telling
- * it to distribute a message. Finally, every 60 seconds temperature.c gets
- * called, telling it to start reading temperature. Also, SMSes get distributed
- * by the logic inside the 50hz routine */
-/* Also, a LED on Arduino GPIO5 is flashed ;) */
-
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
@@ -30,16 +22,25 @@
 #include <stdlib.h>
 
 #include "camera.h"
-#include "gps.h"  
+#include "gps.h"
 #include "hexdump.h"
 #include "log.h"
 #include "main.h"
-#include "messages.h"  
-#include "radio.h" 
+#include "messages.h"
+#include "radio.h"
 #include "sms.h"
-#include "temperature.h"  
+#include "statusled.h"
+#include "temperature.h"
 #include "timer1.h"
 #include "timer3.h"
+#include "watchdog.h"
+
+/* TIMER1 is used for many things. It is set up to generate a 50hz interrupt,
+ * and each time it does interrupt radio_proc gets a call. Furthermore, every 
+ * fifty interrupts ( = one second) the messages.c system gets a call, telling
+ * it to distribute a message. Finally, every 60 seconds temperature.c gets
+ * called, telling it to start reading temperature. Also, SMSes get distributed
+ * by the logic inside the 50hz routine */
 
 /* Although the gps and the sms do not compete for a UART, we do this to 
  * try and make sure each module has as much time as possible to execute
@@ -53,15 +54,6 @@ uint8_t timer1_uart_idle_counter;
 /* These divide the 50hz into seconds, minutes and 5-minutes */
 uint8_t timer1_fifty_counter, timer1_second_counter, timer1_minute_counter;
 
-/* TODO: Perhaps some sort of watch dog?
- * Setup the hardware WDT and reset it in our 50hz interrupt, so if one 
- * of the modules locks up we can grab it
- * Furthermore, perhaps every minute we could have a watchdog-check-module
- * that checks the age on the GPS, age on the temp etc. to see if it's 
- * failing to get a fix and powercycle it or something. 
- * Also, let's have an advanced status-led system - PA1 and PA0 will 
- * connect to a tri-colour led. */
-
 /* 50hz timer interrupt */
 ISR (TIMER1_COMPA_vect)
 {
@@ -71,6 +63,9 @@ ISR (TIMER1_COMPA_vect)
   /* Increment the counter */
   timer1_fifty_counter++;
 
+  /* Reset the watchdog */
+  watchdog_reset();
+
   if (timer1_fifty_counter == 50)
   {
     /* One second has passed */
@@ -78,6 +73,7 @@ ISR (TIMER1_COMPA_vect)
 
     /* Somethings to do each second: */
     camera_proc();                             /* Take pictures */
+    statusled_proc();                          /* Flashy flashy */
     messages_push();                           /* Push Messages */
     latest_data.system_location.fix_age++;     /* Increment Age */
 
@@ -109,10 +105,26 @@ ISR (TIMER1_COMPA_vect)
   /* Count the silence */
   timer1_uart_idle_counter++;
 
+  /* Use these macros to try and make the logic a bit more readable */
+  #define sms_idle     (sms_mode == sms_mode_null ||                          \
+                        sms_mode == sms_mode_rts)
+  #define want_to_sms  (sms_mode == sms_mode_ready ||                         \
+                        sms_mode == sms_mode_rts)
+  #define temp_idle    (temperature_state == temperature_state_null ||        \
+                        temperature_state == temperature_state_want_to_get)
+  #define want_to_temp (temperature_state == temperature_state_want_to_get || \
+                        temperature_state == temperature_state_waited)
+
   /* I estimate that the 'safe-window' is about here */
   if (timer1_uart_idle_counter > 15 && timer1_uart_idle_counter < 35)
   {
-    if (sms_mode == sms_mode_null || sms_mode == sms_mode_rts)
+    if (want_to_sms && temp_idle)
+    {
+      /* Don't start sending smses while taking temperature! */
+      sms_start();
+    }
+
+    if (want_to_temp && sms_idle)
     {
       /* Don't take temperature and while sending a sms! t3 is required */
       if (temperature_state == temperature_state_want_to_get)
@@ -123,13 +135,6 @@ ISR (TIMER1_COMPA_vect)
       {
         temperature_retrieve();
       }
-    }
-
-    if (temperature_state == temperature_state_null && 
-        (sms_mode == sms_mode_ready || sms_mode == sms_mode_rts))
-    {
-      /* Don't start sending smses while taking temperature! */
-      sms_start();
     }
   }
 }

@@ -66,7 +66,6 @@ ISR (TIMER1_COMPA_vect)
       if (c == 0)  c = ' ';
       send_char(c);
     }
-
     send_char_hd(latest_data.system_location.flags);
 
     /* and again, for gps_data */
@@ -76,14 +75,12 @@ ISR (TIMER1_COMPA_vect)
       if (c == 0)  c = ' ';
       send_char(c);
     }
-
     send_char_hd(gps_data.flags);
-
-
 
     send_char('\n');
 
     messages_push();
+    latest_data.system_location.fix_age++;
 
     do
     {
@@ -91,7 +88,6 @@ ISR (TIMER1_COMPA_vect)
       send_char(c);
     }
     while (c != 0);
-   
 
     PORTC ^= _BV(PC0);
   }
