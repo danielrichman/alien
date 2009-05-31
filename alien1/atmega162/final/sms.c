@@ -87,41 +87,48 @@ uint8_t sms_cmdend[]   = { 0x1a, '\r', '\n' };
 uint8_t  sms_state, sms_substate, sms_tempbits;
 uint16_t sms_temp;             /* Used when constructing the message octets */
 
-ISR (USART0_UDRE_vect)
+#define SMS_ENABLE_ISR   UCSR1B |=   _BV(UDRIE1);
+#define SMS_DISABLE_ISR  UCSR1B &= ~(_BV(UDRIE1));
+
+ISR (USART1_UDRE_vect)
 {
   uint16_t c;
 
   switch (sms_state)
   {
     case sms_state_formatcmd:
-      UDR0 = sms_formatcmd[sms_substate];
+      UDR1 = sms_formatcmd[sms_substate];
       sms_substate++;
 
       if (sms_substate == sizeof(sms_formatcmd))
       {
+        SMS_DISABLE_ISR;
+
         sms_substate = 0;
         sms_state++;
       }
       break;
 
     case sms_state_cmdstart:
-      UDR0 = sms_cmdstart[sms_substate];
+      UDR1 = sms_cmdstart[sms_substate];
       sms_substate++;
 
       if (sms_substate == sizeof(sms_cmdstart))
       {
+        SMS_DISABLE_ISR;
+
         sms_substate = 0;
         sms_state++;
       }
       break;
 
     case sms_state_hexstart_a:
-      UDR0 = hexdump_a(sms_hexstart[sms_substate]);
+      UDR1 = hexdump_a(sms_hexstart[sms_substate]);
       sms_state++;
       break;
 
     case sms_state_hexstart_b:
-      UDR0 = hexdump_b(sms_hexstart[sms_substate]);
+      UDR1 = hexdump_b(sms_hexstart[sms_substate]);
       sms_substate++;
 
       if (sms_substate == sizeof(sms_hexstart))
@@ -160,13 +167,13 @@ ISR (USART0_UDRE_vect)
       }
 
       /* Start sending the first byte of sms_temp */
-      UDR0 = hexdump_a( sms_temp );
+      UDR1 = hexdump_a( sms_temp );
       sms_state++;
 
       break;
 
     case sms_state_messagehex_b:
-      UDR0 = hexdump_b( sms_temp );
+      UDR1 = hexdump_b( sms_temp );
 
       /* Get rid of the byte we have just sent, keep MSB as there
        * may be bits set in it */
@@ -188,11 +195,13 @@ ISR (USART0_UDRE_vect)
       break;
 
     case sms_state_cmdend:
-      UDR0 = sms_cmdend[sms_substate];
+      UDR1 = sms_cmdend[sms_substate];
       sms_substate++;
 
       if (sms_substate == sizeof(sms_cmdend))
       {
+        SMS_DISABLE_ISR;
+
         sms_substate = 0;
         sms_state++;
       }
@@ -200,25 +209,33 @@ ISR (USART0_UDRE_vect)
   }
 }
 
-/* It's not an _init like the other ones, because it's only called when sms.c
- * is needed, as it competes with gps.c for use of the UART. */
-void sms_setup()
+void sms_start()
 {
-  /* gps.c will have set up for 8bit chars */
-
-  /* This gets called when we want to start sending an sms and aftear
-   * each waitl finishes */
+  /* This gets called when we want to start sending an sms and 
+   * after each wait finishes */
 
   sms_state++;
 
+  if (sms_state == sms_state_end)
+  {
+    sms_state = sms_state_null;
+  }
+  else
+  {
+    SMS_ENABLE_ISR;
+  }
+}  
+
+void sms_init()
+{
   /* UBRR = F_CPU/(16 * baudrate) - 1 
    *      = 16000000/16b - 1
    *      = 1000000/b - 1
    *      = 1000000/9600 - 1 = 103.16667 */
-  UBRR0L = 103;
+  UBRR1L = 103;
 
-  /* Enable Transmit Mode and UDR empty interrupts */
-  UCSR0B = ((_BV(TXEN0)) | (_BV(UDRIE0)));
+  /* Enable Transmit Mode only */
+  UCSR1B = _BV(TXEN1);
 }
 
 

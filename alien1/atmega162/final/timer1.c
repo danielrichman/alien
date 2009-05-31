@@ -40,10 +40,13 @@
 #include "temperature.h"  
 #include "timer1.h"
 
-/* We use this to work out when it's the best window of opportunity to nick
- * the UART to send a SMS. gps.c zeros  it whenever it recieves a char,
- * so if it reaches a high value we know that the UART is idle. 
- * See note below */
+/* Although the gps and the sms do not compete for a UART, we do this to 
+ * try and make sure each module has as much time as possible to execute
+ * ie. they don't compete for processor time. Therefore, we use this to 
+ * work out when it's the best window of opportunity to send a SMS.
+ * gps.c zeros the idle counter it whenever it recieves a char, so if it 
+ * reaches a high value we know that the GPS UART is idle and we can
+ * start processing other things */
 uint8_t timer1_uart_idle_counter, timer1_want_to_send_sms;
 
 /* These divide the 50hz into seconds, minutes and 5-minutes */
@@ -114,25 +117,8 @@ ISR (TIMER1_COMPA_vect)
     temperature_state = temperature_state_waited;
   }
 
-  /* Deal with the sms short-wait */
-  if (sms_waits)
-  {
-    /* Because the sms_sending will have been started by the last 50hz tick,
-     * and we can send 192 characters in one fiftieth of a second, then it's 
-     * safe to assume that it's done; no need to wait two 50hz ticks to be 
-     * sure. So increment the counter and start the long loop if neccessary. */
-    sms_state++;
-    timer1_sms_counter = timer1_fifty_counter;
-    gps_init();
-
-    if (sms_state == sms_state_end)
-    {
-      sms_state = sms_state_null;
-    }
-  }
-
   /* Deal with the sms long-wait loop */
-  if (sms_waitl && (timer1_sms_counter == timer1_fifty_counter))
+  if (sms_waitmode && (timer1_sms_counter == timer1_fifty_counter))
   {
     timer1_want_to_send_sms = 1;
   }
@@ -147,10 +133,15 @@ ISR (TIMER1_COMPA_vect)
     /* I estimate that the 'safe-window' is about here */
     if (timer1_uart_idle_counter > 15 && timer1_uart_idle_counter < 35)
     {
-      /* Do something */
+      /* Do something; but only one something */
       timer1_uart_idle_counter = 0;
 
-      if (temperature_state == temperature_state_want_to_get)
+      if (timer1_want_to_send_sms == 1)
+      {
+        sms_start();
+        timer1_want_to_send_sms = 0;
+      }
+      else if (temperature_state == temperature_state_want_to_get)
       {
         temperature_request();
 
@@ -162,11 +153,6 @@ ISR (TIMER1_COMPA_vect)
         temperature_retrieve();
       }
 
-      if (timer1_want_to_send_sms == 1)
-      {
-        sms_setup();
-        timer1_want_to_send_sms = 0;
-      }
     }
   }
 }

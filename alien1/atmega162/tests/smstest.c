@@ -57,35 +57,24 @@ void gps_init()
 
 ISR (TIMER1_COMPA_vect)
 {
-  if (sms_waits)
-  {
-    sms_state++;
-    gps_init();
-    timer_counter = 1;
-  }
-  else if (sms_waitl)
+  if (sms_waitmode)
   {
     timer_counter++;
 
     if (timer_counter == 50)
     {
-      sms_state++;
+      sms_start();
+      timer_counter = 0;
     }
-  }
-  else if (sms_state == sms_state_end)
-  {
-    msg_has_finished = 0;
-    sms_state = sms_state_null;
-
-    sms_setup();
-    UCSR0B |= _BV(RXEN0);
   }
 }
 
 int main(void)
 {
        /* Initialise Stuff */
-  sms_setup();
+  sms_init();
+  sms_start();
+
   UCSR0B |= _BV(RXEN0);
 
   TCNT1   = 0;

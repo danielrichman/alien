@@ -38,6 +38,7 @@ int main()
    * the UART, is only enabled when it is needed */
   camera_init();
   gps_init();
+  sms_init();
   radio_init();
   timer1_init();
   temperature_init();

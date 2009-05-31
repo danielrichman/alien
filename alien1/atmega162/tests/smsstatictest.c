@@ -27,7 +27,6 @@ payload_message sms_data;
 /* make -sBj5 smstest.hex.upload */
 /* stty -F /dev/ttyUSB0 cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts && cat /dev/ttyUSB0 */
 
-volatile uint8_t msg_has_finished;
 uint8_t timer_counter;
 
 uint8_t test_message[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'A', 'L', 'I', 'E', 'N', 's' };
@@ -55,34 +54,24 @@ void gps_init()
 
 ISR (TIMER1_COMPA_vect)
 {
-  if (sms_waits)
-  {
-    sms_state++;
-    gps_init();
-  }
-  else if (sms_waitl)
+  if (sms_waitmode)
   {
     timer_counter++;
 
     if (timer_counter == 50)
     {
-      sms_state++;
+      sms_start();
       timer_counter = 0;
     }
-  }
-  
-  if (sms_state == sms_state_end)
-  {
-    msg_has_finished = 0;
-    sms_state = sms_state_null;
-  }
+  } 
 }
 
 /* Basically just send one message then exit */
 int main(void)
 {
        /* Initialise Stuff */
-  sms_setup();
+  sms_init();
+  sms_start();
 
   TCNT1   = 0;
   OCR1A   = 1250;
