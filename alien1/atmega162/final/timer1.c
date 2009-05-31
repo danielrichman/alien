@@ -38,7 +38,8 @@
 #include "radio.h" 
 #include "sms.h"
 #include "temperature.h"  
-#include "timers.h"
+#include "timer1.h"
+#include "timer3.h"
 
 /* Although the gps and the sms do not compete for a UART, we do this to 
  * try and make sure each module has as much time as possible to execute
@@ -47,10 +48,10 @@
  * gps.c zeros the idle counter it whenever it recieves a char, so if it 
  * reaches a high value we know that the GPS UART is idle and we can
  * start processing other things */
-uint8_t timers_uart_idle_counter;
+uint8_t timer1_uart_idle_counter;
 
 /* These divide the 50hz into seconds, minutes and 5-minutes */
-uint8_t timers_fifty_counter, timers_second_counter, timers_minute_counter;
+uint8_t timer1_fifty_counter, timer1_second_counter, timer1_minute_counter;
 
 /* TODO: Perhaps some sort of watch dog?
  * Setup the hardware WDT and reset it in our 50hz interrupt, so if one 
@@ -68,12 +69,12 @@ ISR (TIMER1_COMPA_vect)
   radio_proc();
 
   /* Increment the counter */
-  timers_fifty_counter++;
+  timer1_fifty_counter++;
 
-  if (timers_fifty_counter == 50)
+  if (timer1_fifty_counter == 50)
   {
     /* One second has passed */
-    timers_fifty_counter = 0;
+    timer1_fifty_counter = 0;
 
     /* Somethings to do each second: */
     camera_proc();                             /* Take pictures */
@@ -81,23 +82,23 @@ ISR (TIMER1_COMPA_vect)
     latest_data.system_location.fix_age++;     /* Increment Age */
 
     /* Increment the other counter */
-    timers_second_counter++;
+    timer1_second_counter++;
 
-    if (timers_second_counter == 60)
+    if (timer1_second_counter == 60)
     {
       /* Reached the end of the minute */
-      timers_second_counter = 0;
+      timer1_second_counter = 0;
 
       /* Something to do (roughly) every minute */
       temperature_state = temperature_state_want_to_get;
 
       /* Increment the minute counter */
-      timers_minute_counter++;
+      timer1_minute_counter++;
 
-      if (sms_mode == sms_mode_null && timers_minute_counter == 5)
+      if (sms_mode == sms_mode_null && timer1_minute_counter == 5)
       {
         /* Every five minutes ... */
-        timers_minute_counter   = 0;
+        timer1_minute_counter   = 0;
 
         sms_data = latest_data;
         sms_mode = sms_mode_rts;
@@ -106,10 +107,10 @@ ISR (TIMER1_COMPA_vect)
   }
 
   /* Count the silence */
-  timers_uart_idle_counter++;
+  timer1_uart_idle_counter++;
 
   /* I estimate that the 'safe-window' is about here */
-  if (timers_uart_idle_counter > 15 && timers_uart_idle_counter < 35)
+  if (timer1_uart_idle_counter > 15 && timer1_uart_idle_counter < 35)
   {
     if (sms_mode == sms_mode_null || sms_mode == sms_mode_rts)
     {
@@ -133,38 +134,16 @@ ISR (TIMER1_COMPA_vect)
   }
 }
 
-/* 1hz interrupt - enabled when needed */
-ISR (TIMER3_COMPA_vect)
+void timer1_init()
 {
-  /* Only tick once */
-  timers_t3_stop;
-
-  /* Update whatever we need to update */
-  if (temperature_state == temperature_state_requested)
-  {
-    temperature_state = temperature_state_waited;
-  }
-
-  if (sms_mode == sms_mode_waiting)
-  {
-    sms_mode = sms_mode_ready;
-  }
-}
-
-void timers_init()
-{
-  /* Note: we don't enable timer3 straight away. */
-
   /* Prescaler will be FCPU/256 (Set bit CS02). 
    * So Timer freq will be 16000000/256 = 62500Hz */
   OCR1A   = 1250;   /* 50Hz: 62500/50 = 1250 */
-  OCR3A   = 62500;  /*  1Hz */
 
   /* (E)TIMSK:  Enable Compare Match Interrupts (Set bit OCIEnA) *
    * TCCRnB:    Clear timer on compare match    (Set bit WGMn2)  *
    * TCCRnB:    Prescaler to FCPU/256 & Enable  (Set bit CSn2)   */
   TCCR1B  = _BV(WGM12)  | _BV(CS12);
   TIMSK   = _BV(OCIE1A);
-  ETIMSK  = _BV(OCIE3A);
 }
 

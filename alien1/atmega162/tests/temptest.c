@@ -19,7 +19,7 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 
-/* Simulate timers.c, main.c and messages.c and add debugging hacks */
+/* Simulate timer1.c and timer3.c main.c and messages.c and add debugging hacks */
 #include "../final/temperature.c"
 payload_message latest_data;
 extern uint8_t temperature_flags, temperature_ext_crc, temperature_int_crc;
@@ -37,6 +37,8 @@ void send_char_hd(uint8_t c)
   send_char(hexdump_a(c));
   send_char(hexdump_b(c));
 }
+
+EMPTY_INTERRUPT(TIMER3_COMPA_vect)
 
 ISR (TIMER1_COMPA_vect)
 {

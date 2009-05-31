@@ -30,7 +30,8 @@
 #include "radio.h" 
 #include "sms.h"
 #include "temperature.h"  
-#include "timers.h"
+#include "timer1.h"
+#include "timer3.h"
 
 /* Deal with phone number hardcoding privacy */
 #include "phone_no_private.h"
@@ -213,8 +214,8 @@ void sms_wait()
   SMS_DISABLE_ISR;
   sms_mode = sms_mode_waiting;
 
-  timers_t3_clear;
-  timers_t3_start;
+  timer3_clear();
+  timer3_start();
 }
 
 void sms_start()

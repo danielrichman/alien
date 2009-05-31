@@ -30,7 +30,8 @@
 #include "radio.h" 
 #include "sms.h"
 #include "temperature.h"  
-#include "timers.h"
+#include "timer1.h"
+#include "timer3.h"
 
 /* NOTE: messages.h has a hardcoded max-length for messages. If the format
  * is changed, you must update it */

@@ -30,7 +30,8 @@
 #include "radio.h" 
 #include "sms.h"
 #include "temperature.h"  
-#include "timers.h"
+#include "timer1.h"
+#include "timer3.h"
 
 /* We will have temperature sensors on GPIO6 and GPIO7 (PD6 and PD7) - 
  * While I appreciate that you can have more sensors on one 1wire, we're
@@ -111,12 +112,12 @@ void temperature_request()
   /* CONV_T cmd */
   temperature_writebyte(convtemp_cmd);
 
-  /* Return to timers.c; it will bring control back here when a second has
-   * passed. Also, timers.c guarantees that temperature will not have been
-   * started while timer3 is in use by sms.c */
+  /* Return to timer1.c; timer3.c will ask it to bring control back here 
+   * when a second has passed. Also, timer1/3.c guarantees that temperature 
+   * will not have been started while timer3 is in use by sms.c */
   temperature_state = temperature_state_requested;
-  timers_t3_clear;
-  timers_t3_start;
+  timer3_clear();
+  timer3_start();
 }
 
 void temperature_retrieve()
@@ -221,7 +222,7 @@ void temperature_retrieve()
   }
 
   /* Have we completed successfully? If not, set state to want_to_get and 
-   * timers.c will call us again quicker */
+   * timer1.c will call us again quicker */
   if (TEMP_EXT_OK && TEMP_INT_OK)
   {
     temperature_state = temperature_state_null;   /* Finished. */

@@ -30,7 +30,8 @@
 #include "radio.h" 
 #include "sms.h"
 #include "temperature.h"  
-#include "timers.h"
+#include "timer1.h"
+#include "timer3.h"
 
 int main()
 {
@@ -40,7 +41,8 @@ int main()
   gps_init();
   sms_init();
   radio_init();
-  timers_init();
+  timer1_init();
+  timer3_init();
   temperature_init();
 
   /* Interrupts on - go go go! */

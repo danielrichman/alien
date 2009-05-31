@@ -20,7 +20,7 @@
 #include <avr/sleep.h>
 #include <util/delay.h>
 
-/* Simulate messages.c and timers.c, test sms.c */
+/* Simulate messages.c, timer1.c and timer3.c, test sms.c */
 #include "../final/sms.c"
 payload_message sms_data;
 

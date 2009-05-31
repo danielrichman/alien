@@ -30,7 +30,8 @@
 #include "radio.h" 
 #include "sms.h"
 #include "temperature.h"  
-#include "timers.h"
+#include "timer1.h"
+#include "timer3.h"
 
 /* The radio will be on gpio 0 and 1.
  * Arduino gpio0 = Port B, PB0; gpio1 = Port B, PB1 */

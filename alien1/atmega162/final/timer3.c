@@ -33,18 +33,29 @@
 #include "timer1.h"
 #include "timer3.h"
 
-uint8_t log_state;
-
-/* TODO: log.c: add ISR */
-
-void log_start()
+/* 1hz interrupt - enabled when needed */
+ISR (TIMER3_COMPA_vect)
 {
-  /* TODO: log.c: log_start() */
-  /* log_state++; */
+  /* Only tick once */
+  timer3_stop();
+
+  /* Update whatever we need to update */
+  if (temperature_state == temperature_state_requested)
+  {
+    temperature_state = temperature_state_waited;
+  }
+
+  if (sms_mode == sms_mode_waiting)
+  {
+    sms_mode = sms_mode_ready;
+  }
 }
 
-void log_init()
+/* Note: we don't enable timer3 straight away. */
+void timer3_init()
 {
-  /* TODO: log.c: log_init() */
+  /* For info, see timer1.c _init notes */
+  OCR3A   = 62500;  /*  1Hz */
+  ETIMSK  = _BV(OCIE3A);
 }
 

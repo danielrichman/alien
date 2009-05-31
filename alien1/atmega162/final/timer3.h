@@ -15,36 +15,17 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
+#ifndef ALIEN_TIMER3_HEADER
+#define ALIEN_TIMER3_HEADER
+
 #include <stdint.h>
-#include <stdlib.h>
 
-#include "camera.h"
-#include "gps.h"  
-#include "hexdump.h"
-#include "log.h"
-#include "main.h"
-#include "messages.h"  
-#include "radio.h" 
-#include "sms.h"
-#include "temperature.h"  
-#include "timer1.h"
-#include "timer3.h"
+/* for sms.c and timers.c */
+#define timer3_clear()   TCNT3  = 0;
+#define timer3_start()   TCCR3B = ((_BV(CS32)) | (_BV(WGM32)));
+#define timer3_stop()    TCCR3B = 0;
 
-uint8_t log_state;
+/* Prototype */
+void timer3_init();
 
-/* TODO: log.c: add ISR */
-
-void log_start()
-{
-  /* TODO: log.c: log_start() */
-  /* log_state++; */
-}
-
-void log_init()
-{
-  /* TODO: log.c: log_init() */
-}
-
+#endif 
