@@ -30,7 +30,7 @@
 #include "radio.h" 
 #include "sms.h"
 #include "temperature.h"  
-#include "timer1.h"
+#include "timers.h"
 
 /* NOTE: The camera is on Port A, Outputs 3 (focus) and 2 (fullshutter). */
 

@@ -38,7 +38,7 @@
 #include "radio.h" 
 #include "sms.h"
 #include "temperature.h"  
-#include "timer1.h"
+#include "timers.h"
 
 /* Although the gps and the sms do not compete for a UART, we do this to 
  * try and make sure each module has as much time as possible to execute
@@ -47,11 +47,11 @@
  * gps.c zeros the idle counter it whenever it recieves a char, so if it 
  * reaches a high value we know that the GPS UART is idle and we can
  * start processing other things */
-uint8_t timer1_uart_idle_counter, timer1_want_to_send_sms;
+uint8_t timers_uart_idle_counter, timers_want_to_send_sms;
 
 /* These divide the 50hz into seconds, minutes and 5-minutes */
-uint8_t timer1_fifty_counter, timer1_second_counter, timer1_minute_counter;
-uint8_t timer1_temperature_counter, timer1_sms_counter;
+uint8_t timers_fifty_counter, timers_second_counter, timers_minute_counter;
+uint8_t timers_temperature_counter, timers_sms_counter;
 
 /* TODO: Perhaps some sort of watch dog?
  * Setup the hardware WDT and reset it in our 50hz interrupt, so if one 
@@ -69,12 +69,12 @@ ISR (TIMER1_COMPA_vect)
   radio_proc();
 
   /* Increment the counter */
-  timer1_fifty_counter++;
+  timers_fifty_counter++;
 
-  if (timer1_fifty_counter == 50)
+  if (timers_fifty_counter == 50)
   {
     /* One second has passed */
-    timer1_fifty_counter = 0;
+    timers_fifty_counter = 0;
 
     /* Somethings to do each second: */
     camera_proc();                             /* Take pictures */
@@ -86,67 +86,67 @@ ISR (TIMER1_COMPA_vect)
     latest_data.system_temp.internal_temperature |= temperature_ubits_age;
 
     /* Increment the other counter */
-    timer1_second_counter++;
+    timers_second_counter++;
 
-    if (timer1_second_counter == 60)
+    if (timers_second_counter == 60)
     {
       /* Reached the end of the minute */
-      timer1_second_counter = 0;
+      timers_second_counter = 0;
 
       /* Something to do every minute */
       temperature_state = temperature_state_want_to_get;
 
       /* Increment the minute counter */
-      timer1_minute_counter++;
+      timers_minute_counter++;
 
-      if (sms_state == sms_state_null && timer1_minute_counter == 5)
+      if (sms_state == sms_state_null && timers_minute_counter == 5)
       {
         /* Every five minutes ... */
         sms_data = latest_data;
 
-        timer1_minute_counter = 0;
-        timer1_want_to_send_sms = 1;
+        timers_minute_counter = 0;
+        timers_want_to_send_sms = 1;
       }
     }
   }
 
   /* Deal with temperature wait-loop */
   if ( temperature_state == temperature_state_requested &&
-       (timer1_temperature_counter == timer1_fifty_counter))
+       (timers_temperature_counter == timers_fifty_counter))
   {
     temperature_state = temperature_state_waited;
   }
 
   /* Deal with the sms long-wait loop */
-  if (sms_waitmode && (timer1_sms_counter == timer1_fifty_counter))
+  if (sms_waitmode && (timers_sms_counter == timers_fifty_counter))
   {
-    timer1_want_to_send_sms = 1;
+    timers_want_to_send_sms = 1;
   }
 
   /* Count the silence */
-  timer1_uart_idle_counter++;
+  timers_uart_idle_counter++;
 
-  if (timer1_want_to_send_sms == 1 || 
+  if (timers_want_to_send_sms == 1 || 
       temperature_state == temperature_state_want_to_get ||
       temperature_state == temperature_state_waited)
   {
     /* I estimate that the 'safe-window' is about here */
-    if (timer1_uart_idle_counter > 15 && timer1_uart_idle_counter < 35)
+    if (timers_uart_idle_counter > 15 && timers_uart_idle_counter < 35)
     {
       /* Do something; but only one something */
-      timer1_uart_idle_counter = 0;
+      timers_uart_idle_counter = 0;
 
-      if (timer1_want_to_send_sms == 1)
+      if (timers_want_to_send_sms == 1)
       {
         sms_start();
-        timer1_want_to_send_sms = 0;
+        timers_want_to_send_sms = 0;
       }
       else if (temperature_state == temperature_state_want_to_get)
       {
         temperature_request();
 
         /* Wait until the fifty counter gets back to its current value */
-        timer1_temperature_counter = timer1_fifty_counter;
+        timers_temperature_counter = timers_fifty_counter;
       }
       else if (temperature_state == temperature_state_waited)
       {
@@ -157,7 +157,7 @@ ISR (TIMER1_COMPA_vect)
   }
 }
 
-void timer1_init()
+void timers_init()
 {
   /* Clear the timer counter */
   TCNT1  = 0;

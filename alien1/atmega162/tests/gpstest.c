@@ -24,7 +24,7 @@
 #include "../final/gps.c"
 #include "../final/messages.c"
 uint8_t log_state = log_state_null;
-uint8_t timer1_uart_idle_counter;
+uint8_t timers_uart_idle_counter;
 uint8_t radio_state = radio_state_not_txing;
 
 /* make -sBj5 gpstest.hex.upload && stty -F /dev/ttyUSB0 cs8 4800 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts && cat /dev/ttyUSB0 */
@@ -55,9 +55,9 @@ ISR (TIMER1_COMPA_vect)
 {
   uint8_t i, c;
 
-  timer1_uart_idle_counter++;
+  timers_uart_idle_counter++;
 
-  if (timer1_uart_idle_counter == 26)
+  if (timers_uart_idle_counter == 26)
   {
     /* minus three is the last three bytes, which is binary data */
     for (i = 0; i < sizeof(latest_data.system_location) - 3; i++)

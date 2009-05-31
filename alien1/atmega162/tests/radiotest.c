@@ -75,7 +75,7 @@ int main(void)
        /* Setup radio input outputs */
   radio_init();
 
-       /* Setup timer to 50hz (from timer1.c) */
+       /* Setup timer to 50hz (from timers.c) */
   /* Clear the timer counter */
   TCNT1  = 0;
 

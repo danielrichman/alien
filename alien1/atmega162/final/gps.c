@@ -30,7 +30,7 @@
 #include "radio.h" 
 #include "sms.h"
 #include "temperature.h"  
-#include "timer1.h"
+#include "timers.h"
 
 /* A list of fields and their index, starting from 1. The index goes up
  * every time a ',' or a '.' is encountered, and it also goes up to separate
@@ -73,7 +73,7 @@ ISR (USART0_RXC_vect)
   c = UDR0;
 
   /* Reset the idle counter */
-  timer1_uart_idle_counter = 0;
+  timers_uart_idle_counter = 0;
 
   /* We treat the $ as a reset pulse. This overrides the current state because
    * a) a $ isn't valid in any of our data fields

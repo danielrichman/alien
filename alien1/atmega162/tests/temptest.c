@@ -19,7 +19,7 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 
-/* Simulate timer1.c, main.c and messages.c and add debugging hacks */
+/* Simulate timers.c, main.c and messages.c and add debugging hacks */
 #include "../final/temperature.c"
 payload_message latest_data;
 extern uint8_t temperature_flags, temperature_ext_crc, temperature_int_crc;

@@ -15,15 +15,15 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ALIEN_TIMER1_HEADER
-#define ALIEN_TIMER1_HEADER
+#ifndef ALIEN_TIMERS_HEADER
+#define ALIEN_TIMERS_HEADER
 
 #include <stdint.h>
 
 /* gps.c needs access to this */
-extern uint8_t timer1_uart_idle_counter;
+extern uint8_t timers_uart_idle_counter;
 
 /* Prototype */
-void timer1_init();
+void timers_init();
 
 #endif 
