@@ -162,7 +162,7 @@ int main(int argc, char **argv)
     /* Now increment L to show that we've written 7 bits */
     l += 7;
 
-    /* If we've gone >= 8 bits, we must move onto the next bit */
+    /* If we've gone >= 8 bits, we must move onto the next byte */
     if (l >= 8)
     {
       l -= 8;
