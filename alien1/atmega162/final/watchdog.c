@@ -45,7 +45,7 @@ void watchdog_init()
   /* Now reset the status register */
   MCUCSR = 0;
 
-  /* Setup for a 2.1 second watchdog reset */
-  WDTCR = ((_BV(WDE)) | (_BV(WDP2)) | (_BV(WDP1)) | (_BV(WDP0)));
+  /* Setup for a ~2.1 second watchdog reset */
+  wdt_enable(WDTO_2S);
 }
 

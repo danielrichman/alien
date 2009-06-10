@@ -58,6 +58,9 @@
 uint8_t gps_state, gps_checksum, gps_substate, gps_storing_maxlen, gps_prem;
 uint8_t *gps_storing_location;
 
+/* Set to 5 when $GPGGA is matched. Decreased otherwise each second */
+uint8_t gps_rx_ok;
+
 /* GPGGA sentences provide fix data */
 uint8_t gps_sentence_mask[5] = { 'G', 'P', 'G', 'G', 'A' };
 
@@ -327,6 +330,9 @@ void gps_next_field()
         gps_state = gps_state_null;
         return;
       } 
+
+      /* Good match */
+      gps_rx_ok = 5;
 
       break;
 

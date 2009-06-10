@@ -64,7 +64,7 @@ ISR (TIMER1_COMPA_vect)
   timer1_fifty_counter++;
 
   /* Reset the watchdog */
-  watchdog_reset();
+  wdt_reset();
 
   if (timer1_fifty_counter == 50)
   {
@@ -76,6 +76,13 @@ ISR (TIMER1_COMPA_vect)
     statusled_proc();                          /* Flashy flashy */
     messages_push();                           /* Push Messages */
     latest_data.system_location.fix_age++;     /* Increment Age */
+
+    /* set by gps.c, used by statusled.c */
+    if (gps_rx_ok != 0)
+    {
+      gps_rx_ok--;
+    }
+
 
     /* Increment the other counter */
     timer1_second_counter++;

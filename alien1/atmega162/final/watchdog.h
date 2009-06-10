@@ -20,11 +20,8 @@
 
 #include <avr/io.h>
 
-/* We don't use AVR-LIBC's implementation of this because we don't need the
- * handling of sreg and interrupts etc. */
-
-/* Reset the WDT */
-#define watchdog_reset() __asm__ __volatile__ ("wdr")
+/* Including here will include for all .c files */
+#include <avr/wdt.h>
 
 /* Prototype */
 void watchdog_init();

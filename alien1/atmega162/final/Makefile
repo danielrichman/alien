@@ -1,4 +1,4 @@
-#!/usr/bin/make
+#!/usr/bin/make -f
 # -*- makefile -*-
 
 #    Copyright (C) 2008  Daniel Richman

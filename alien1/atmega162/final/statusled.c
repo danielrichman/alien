@@ -100,6 +100,22 @@ void statusled_proc()
       statusled_flash = statusled_flash_a;
     }
   }
+  else if (gps_rx_ok != 0)
+  {
+    /* Red/Yellow pulsing to show gps rx ok, but no fix */
+    STATUSLED_RED_ON;
+
+    if (statusled_flash == statusled_flash_a)
+    {
+      STATUSLED_GRN_ON;
+      statusled_flash = statusled_flash_b;
+    }
+    else
+    {
+      STATUSLED_GRN_OFF;
+      statusled_flash = statusled_flash_a;
+    }
+  }
   else
   {
     /* Otherwise we pulse red/off or yellow/off depending on 
