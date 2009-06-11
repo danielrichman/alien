@@ -94,7 +94,7 @@ void statusled_proc()
       {
         /* Green/Red pulsing to show that we had a fix but it's lost */
         STATUSLED_RED_ON;
-        STATUSLED_GRN_ON;
+        STATUSLED_GRN_OFF;
       }
 
       statusled_flash = statusled_flash_a;
@@ -118,17 +118,11 @@ void statusled_proc()
   }
   else
   {
-    /* Otherwise we pulse red/off or yellow/off depending on 
-     * if it was good reset (yellow = Watchdog or Brown-out reset) */
+    /* Otherwise we pulse red/off while waiting */
     STATUSLED_GRN_OFF;
 
     if (statusled_flash == statusled_flash_a)
     {
-      if (log_header & ((_BV(WDRF)) | (_BV(BORF))))
-      {
-        STATUSLED_GRN_ON;
-      }
-
       STATUSLED_RED_ON;
       statusled_flash = statusled_flash_b;
     }
@@ -144,5 +138,13 @@ void statusled_init()
 {
   /* Set both as outputs */
   DDRA |= ((_BV(PA0)) | (_BV(PA1)));
+
+  /* Start Green if normal bootup, Yellow if WDT reset*/
+  STATUSLED_GRN_ON;
+
+  if (MCUCSR & (_BV(WDRF)))
+  {
+    STATUSLED_RED_ON;
+  }
 }
 

@@ -83,7 +83,6 @@ ISR (TIMER1_COMPA_vect)
       gps_rx_ok--;
     }
 
-
     /* Increment the other counter */
     timer1_second_counter++;
 
