@@ -203,7 +203,7 @@ ISR (USART1_UDRE_vect)
       if (sms_substate == sizeof(sms_cmdend))
       {
         sms_substate = 0;
-        sms_state = sms_state_null;
+        sms_state = sms_state_formatcmd;
         sms_mode  = sms_mode_null;
         SMS_DISABLE_ISR;
       }
@@ -225,7 +225,6 @@ void sms_start()
   /* This gets called when we want to start sending an sms and 
    * after each wait finishes */
 
-  sms_state++;
   sms_mode = sms_mode_busy;
   SMS_ENABLE_ISR;
 }  

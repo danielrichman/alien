@@ -22,15 +22,14 @@
 
 extern uint8_t sms_state, sms_mode;
 
-#define sms_state_null          0
-#define sms_state_formatcmd     1
-#define sms_state_cmdstart      2
-#define sms_state_hexstart_a    3
-#define sms_state_hexstart_b    4
-#define sms_state_messagehex_a  5
-#define sms_state_messagehex_b  6
-#define sms_state_cmdend        7
-#define sms_state_end           8
+#define sms_state_formatcmd     0
+#define sms_state_cmdstart      1
+#define sms_state_hexstart_a    2
+#define sms_state_hexstart_b    3
+#define sms_state_messagehex_a  4
+#define sms_state_messagehex_b  5
+#define sms_state_cmdend        6
+#define sms_state_end           7
 
 #define sms_mode_null           0
 #define sms_mode_rts            1   /* request to send */
