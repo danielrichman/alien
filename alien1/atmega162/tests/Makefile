@@ -33,7 +33,7 @@ MAPFLAGS = -Wl,-Map,
 all : $(hexfiles)
 
 %.elf : %.c
-	$(avr_gcc)  -c $(CFLAGS) -o $@ $<
+	$(avr_gcc)  $(CFLAGS) -o $@ $<
 	$(avr_size) --common $@
 
 %.hex : %.elf
@@ -42,7 +42,6 @@ all : $(hexfiles)
 %.hex.upload : %.hex
 	$(avrdude) -p $(mmcu) -P /dev/ttyACM0 -c stk500v2 \
 	           -U flash:w:$<
-	        -U flash:w:$<
 
 clean :
 	rm -f *.hex 

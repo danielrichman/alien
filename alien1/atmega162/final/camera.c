@@ -40,8 +40,8 @@
 /* How long to wait between taking photos, in seconds.
  * Cannot be < (camera_hold_focus + camera_hold_both) */
 #define camera_rate          20
-#define camera_hold_focus    2
-#define camera_hold_both     1
+#define camera_hold_focus    5
+#define camera_hold_both     2
 
 /* Basically, when seconds == camera_rate we want to reset the counter
  * In order to do that, the last step of photo-taking must happen then,

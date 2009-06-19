@@ -214,7 +214,9 @@ void temperature_retrieve()
   temperature_internal |= temperature_ubits_valid;
 
   /* We swap between setting toggle_a and toggle_b, so that it can be detected
-   * in the radio and the log when the value is read or changed. */
+   * in the radio and the log when the value is read or changed. Because we 
+   * read the temperature at such a slow rate (1 minute), it's ok to do this
+   * globally and not on a per-message basis (with SMS we don't care). */
   if (latest_data.system_temp.external_temperature & temperature_ubits_toggle_a)
   {
     temperature_external |= temperature_ubits_toggle_b;

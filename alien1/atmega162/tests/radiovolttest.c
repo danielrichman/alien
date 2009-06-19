@@ -22,47 +22,55 @@
 /* Used to test the generated voltages for the radio */
 /* make -sBj5 radiovolttest.hex.upload */
 
-/* From radio.c */
-#define RADIO_MARK  PORTB &= ~(_BV(PD1));    /* PB0 on PB1 off */  \
-                    PORTB |=   _BV(PD0);
-#define RADIO_SPACE PORTB &= ~(_BV(PD0));    /* PB1 on PB0 off */  \
-                    PORTB |=   _BV(PD1);
+#define STATUSLED_RED_ON   PORTA |=   _BV(PA0)
+#define STATUSLED_RED_OFF  PORTA &= ~(_BV(PA0))
+#define STATUSLED_GRN_ON   PORTA |=   _BV(PA1)
+#define STATUSLED_GRN_OFF  PORTA &= ~(_BV(PA1))
 
 uint8_t i;
 
 ISR (TIMER1_COMPA_vect)
 {
-  if (i == 0)
+  if (i == 1)
   {
-    RADIO_SPACE;
-    i = 1;
-  }
-  else
-  {
-    RADIO_MARK;
+    /* Mark:  PB0 on PB1 off */
+    PORTB &= ~(_BV(PB1));
+    PORTB |=   _BV(PB0);
+    STATUSLED_RED_ON;
+    STATUSLED_GRN_OFF;
     i = 0;
+  }
+  else 
+  {
+    /* Space: PB1 on PB0 off */
+    PORTB &= ~(_BV(PB0));
+    PORTB |=   _BV(PB1);
+    STATUSLED_RED_OFF;
+    STATUSLED_GRN_ON;
+    i = 1;
   }
 }
 
 int main(void)
 {
-       /* Setup IO */
+  DDRA  |= ((_BV(PA0)) | (_BV(PA1)));
+
   DDRB  |= _BV(DDB0);     /* Set portB, pin0 as an output.   */
   DDRB  |= _BV(DDB1);     /* Set portB, pin1 as an output.   */
-  RADIO_MARK              /* Idle state = mark               */
 
-  /* Prescaler to FCPU/1024; Clear timer on compare match *
-   * Timer freq is 16000000/1024 = 15625Hz
-   * We want 1Hz, so we want an interrupt every 15625 timer1 ticks. */
-  TCCR1B  = (_BV(CS02) | _BV(CS00) | _BV(WGM12));
-  OCR1A   = 15625;
+  PORTB &= ~(_BV(PB1));
+  PORTB |=   _BV(PB0);
+  STATUSLED_RED_ON;
+  STATUSLED_GRN_OFF;
 
-       /* Enable Timer1 */
+  OCR1A   = 62500;
+  TCCR1B  = _BV(WGM12)  | _BV(CS12);
+  TIMSK   = _BV(OCIE1A);
+
   TCNT1   = 0;            /* Reset timer */
   TIMSK   = _BV(OCIE1A);  /* Enable Compare Match Interrupts */
   sei();                  /* Turn on interrupts */
 
-       /* Sleep */
   for (;;) sleep_mode();
 }
 

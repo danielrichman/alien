@@ -40,6 +40,8 @@ void send_char_hd(uint8_t c)
 
 EMPTY_INTERRUPT(TIMER3_COMPA_vect)
 
+uint8_t temperature_testtick;
+
 ISR (TIMER1_COMPA_vect)
 {
   send_char_hd( temperature_state );
@@ -55,15 +57,31 @@ ISR (TIMER1_COMPA_vect)
     case temperature_state_requested:
     case temperature_state_waited:
       temperature_retrieve();
+      if (temperature_testtick == 0)
+      {
+        latest_data.system_temp.external_temperature |= 
+                                                 temperature_ubits_toggle_a;
+        latest_data.system_temp.internal_temperature |= 
+                                                 temperature_ubits_toggle_a;
+        temperature_testtick = 1;
+      }
+      else
+      {
+        latest_data.system_temp.external_temperature |= 
+                                                 temperature_ubits_toggle_b;
+        latest_data.system_temp.internal_temperature |= 
+                                                 temperature_ubits_toggle_b;
+        temperature_testtick = 0;
+      }
       break;
   }
 
-  /* Note - this compensates for little endian */
-  send_char_hd( ((uint8_t *) &latest_data.system_temp)[1] );
+  /* Note - this doesn't compensate for little endian */
   send_char_hd( ((uint8_t *) &latest_data.system_temp)[0] );
+  send_char_hd( ((uint8_t *) &latest_data.system_temp)[1] );
   send_char( ' ' );
-  send_char_hd( ((uint8_t *) &latest_data.system_temp)[3] );
   send_char_hd( ((uint8_t *) &latest_data.system_temp)[2] );
+  send_char_hd( ((uint8_t *) &latest_data.system_temp)[3] );
   send_char( ' ' );
   send_char_hd( temperature_ext_crc );
   send_char( ' ' );
@@ -72,9 +90,6 @@ ISR (TIMER1_COMPA_vect)
   send_char_hd( temperature_state );
   send_char_hd( temperature_flags );
   send_char( '\n' );
-
-  latest_data.system_temp.external_temperature |= temperature_ubits_age;
-  latest_data.system_temp.internal_temperature |= temperature_ubits_age;
 
   PORTC ^= _BV(PC0);
 }
@@ -90,9 +105,6 @@ int main(void)
    * We want 1Hz, so we want an interrupt every 15625 timer1 ticks. */
   TCCR1B  = (_BV(CS02) | _BV(CS00) | _BV(WGM12));
   OCR1A   = 15625;
-
-       /* Initialise Temperature */
-  temperature_init();
 
        /* Setup UART */
   UBRR0L = 207;

@@ -16,24 +16,19 @@
 #    For a full copy of the GNU General Public License, 
 #    see <http://www.gnu.org/licenses/>.
 
-V = -Dverbose
-O = -g
-
-VERBOSE =
 OPT = -O2 -march=native
 PEDANT = -Wall --pedantic
+CFLAGS = $(OPT) $(PEDANT)
 elffiles := $(patsubst %.c,%,$(wildcard *.c))
 
 all : $(elffiles)
-verbose : clean
-	make VERBOSE=$(V) OPT=$(O) all
 
 % : %.c
-	gcc -o $@ $(OPT) $(PEDANT) $< $(VERBOSE)
+	gcc $(CFLAGS) -o $@ $<
 
 clean :
 	rm -f $(elffiles)
 
-.PHONY : clean
+.PHONY : clean all
 
 

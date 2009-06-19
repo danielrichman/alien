@@ -68,7 +68,8 @@ void statusled_proc()
     }
     else
     {
-      if (latest_data.system_location.fix_age < 2)
+      /* This function will be run before increasing fix_age, so test for 0 */
+      if (latest_data.system_location.fix_age == 0)
       {
         if ( (latest_data.system_temp.external_temperature & 
                                        temperature_ubits_valid) &&
