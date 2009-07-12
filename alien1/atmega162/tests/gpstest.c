@@ -23,7 +23,7 @@
 #define ALIEN_DEBUG_GPS
 #include "../final/gps.c"
 #include "../final/messages.c"
-uint8_t log_state = log_state_null;
+uint8_t log_state = log_state_reset; /* messages.c will not call */
 uint8_t timer1_uart_idle_counter;
 uint8_t radio_state = radio_state_not_txing;
 
@@ -42,11 +42,6 @@ void send_char_hd(uint8_t c)
 }
 
 void radio_send()
-{
-
-}
-
-void log_start()
 {
 
 }

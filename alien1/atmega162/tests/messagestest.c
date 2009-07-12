@@ -24,7 +24,7 @@
 /* make -sBj5 messagestest.hex.upload && stty -F /dev/ttyUSB0 cs8 4800 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts && cat /dev/ttyUSB0 */
 
 uint8_t radio_state = radio_state_not_txing;
-uint8_t log_state = log_state_null;
+uint8_t log_state = log_state_reset;  /* messages.c will not call */
 
 void send_char(uint8_t c)
 {
@@ -39,11 +39,6 @@ void send_char_hd(uint8_t c)
 }
 
 void radio_send()
-{
-
-}
-
-void log_start()
 {
 
 }

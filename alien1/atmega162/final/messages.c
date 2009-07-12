@@ -350,7 +350,7 @@ void messages_push()
     radio_send();               /* Go go go! */
   }
 
-  if (log_state == log_state_idle || log_state == log_state_initreset)
+  if (log_state == log_state_initreset || log_state == log_state_idle)
   {
     log_data = latest_data;
     log_start();

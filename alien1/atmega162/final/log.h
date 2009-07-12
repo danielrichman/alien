@@ -35,15 +35,15 @@
 #define log_state_writewait_data   14   /* Waiting for write finish */
 #define log_state_writecheck_data  15   /* CMD13: Check status */
 
+#define log_state_deselect_idle    101  /* Wind down, end loop, goto idle */
+#define log_state_deselect         102  /* Wind down, end loop, goto 0 */
+
 #define log_timeout_max          250    /* Don't hang around */
 #define log_timeout_write_max    4000 
 
 extern uint8_t log_state;
 
-uint8_t crc7_byte_update(uint8_t crc, uint8_t b);
-#define crc7_finish(crc)   (((crc) << 1) | 0x01)
-
-void log_start();
+#define log_start()  SPDR = 0xFF
 void log_init();
 
 #endif 

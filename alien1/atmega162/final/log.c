@@ -94,9 +94,6 @@ ISR(SPI_STC_vect)
 
   if (log_mode == log_mode_commanding)
   {
-    /* Select slave (if not already selected) */
-    SS_LOW;
-
     /* Send data */
     SPDR = log_command[log_substate];
 
@@ -122,7 +119,7 @@ ISR(SPI_STC_vect)
       if (log_timeout == log_timeout_max)
       {
         log_timeout = 0;
-        log_state   = log_state_initreset;
+        log_state   = log_state_deselect;
         log_mode    = log_mode_null;
         SS_HIGH;
       }
@@ -149,6 +146,9 @@ ISR(SPI_STC_vect)
           /* Next status: _reset, CMD0 */
           log_state++;
           log_substate = 0;
+
+          /* Select slave (if not already selected) */
+          SS_LOW;
 
           log_mode = log_mode_commanding;
           log_command[0] = SDCMD(0);
@@ -177,7 +177,7 @@ ISR(SPI_STC_vect)
         }
         else
         {
-          log_state = log_state_initreset;
+          log_state = log_state_deselect;
           SS_HIGH;
         }
 
@@ -206,7 +206,7 @@ ISR(SPI_STC_vect)
         }
         else
         {
-          log_state = log_state_initreset;
+          log_state = log_state_deselect;
           SS_HIGH;
         }
 
@@ -236,7 +236,7 @@ ISR(SPI_STC_vect)
         }
         else
         {
-          log_state = log_state_initreset;
+          log_state = log_state_deselect;
           SS_HIGH;
         }
 
@@ -258,7 +258,7 @@ ISR(SPI_STC_vect)
         }
         else        
         {
-          log_state = log_state_initreset;
+          log_state = log_state_deselect;
           SS_HIGH;
         }
 
@@ -276,6 +276,11 @@ ISR(SPI_STC_vect)
           /* Now wait for the data-start-token */
           log_mode = log_mode_waiting;
         }
+        else
+        {
+          log_state = log_state_deselect;
+          SS_HIGH;
+        }
 
         SPDR = 0xFF;
         break;
@@ -287,6 +292,11 @@ ISR(SPI_STC_vect)
         {
           /* Success - DATA INCOMING! */
           log_state++;
+        }
+        else
+        {
+          log_state = log_state_deselect;
+          SS_HIGH;
         }
 
         SPDR = 0xFF;
@@ -366,7 +376,7 @@ ISR(SPI_STC_vect)
         SPDR = 0xFF;
 
         log_substate++;
-        if (log_substate == 128)
+        if (log_substate == 128 + 2)  /* Two CRCs, ignored */
         {
           /* Success */
           log_state++;
@@ -432,7 +442,7 @@ ISR(SPI_STC_vect)
           else
           {
             /* Bad. */
-            log_state = log_state_initreset;
+            log_state = log_state_deselect;
             SS_HIGH;
             SPDR = 0xFF;
           }
@@ -459,7 +469,7 @@ ISR(SPI_STC_vect)
 
           log_substate++; 
 
-          if (log_substate == 128 + 1)   /* plus one because of data token */
+          if (log_substate == 128 + 1 + 2)  /* one data token and 2 crcs */
           {
             /* Next: Wait for data_response token */
             log_mode = log_mode_waiting;
@@ -493,6 +503,7 @@ ISR(SPI_STC_vect)
             log_command[0] = SDCMD(13);
           }
         }
+
         SPDR = 0xFF;
         break;
 
@@ -504,7 +515,6 @@ ISR(SPI_STC_vect)
           if (log_substate == 0)
           {
             log_substate = 1;
-            SPDR = 0xFF;
           }
           else
           {
@@ -515,30 +525,36 @@ ISR(SPI_STC_vect)
             if (log_state == log_state_writecheck_super)
             {
               log_state = log_state_write_data;
-              SPDR = 0xFF;
             }
             else
             {
-              log_state = log_state_idle;
-              /* DON'T set SPDR, the Interrupt-loop will stop, and we wait 
-               * until log_start is called */
+              log_state = log_state_deselect_idle;
+              SS_HIGH;
             }
           }
         }
         else
         {
-          log_state = log_state_initreset;
+          log_state = log_state_deselect;
           SS_HIGH;
-          SPDR = 0xFF;
         }
+
+        SPDR = 0xFF;
+        break;
+
+      case log_state_deselect_idle:
+        /* After deselecting, the Interrupt-loop will stop, and we wait 
+         * until log_start is called. By not setting SPDR another interrupt
+         * will not be generated. */
+        log_state = log_state_idle;
+        break;
+
+      case log_state_deselect:
+        /* Something broke. Deselect and go back to the beginning */
+        log_state = log_state_initreset;
         break;
     }
   }
-}
-
-void log_start()
-{
-  SPDR = 0xFF;
 }
 
 void log_init()
