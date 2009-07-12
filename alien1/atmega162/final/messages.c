@@ -41,6 +41,8 @@
 /* $$A1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<N-LATITUDE DD.DDDDDD>,
  * <E-LONGITUDE DDD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FIX_AGE_HEXDUMP>,
  * <GPS_SAT_COUNT>,<TEMPERATURE_HEXDUMP>,*<CHECKSUM><NEWLINE> */
+/* WARNING: Any Hexdump fields will be subject to Endian-ness. 
+ * AVR is little endian */
 
 /* Message Buffers: see messages.h for more info */
 payload_message latest_data, log_data, radio_data, sms_data;
@@ -348,7 +350,7 @@ void messages_push()
     radio_send();               /* Go go go! */
   }
 
-  if (log_state == log_state_null)
+  if (log_state == log_state_idle || log_state == log_state_initreset)
   {
     log_data = latest_data;
     log_start();

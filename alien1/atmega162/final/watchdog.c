@@ -38,9 +38,8 @@
 void watchdog_init()
 {
   /* Grab the source of the reset and log it: bits 3..0 in MCUCSR 
-   * (Ignore JTAG) */
-  log_header = MCUCSR & ((_BV(WDRF))  | (_BV(BORF)) | 
-                         (_BV(EXTRF)) | (_BV(PORF)));
+     log_header = MCUCSR & ((_BV(WDRF))  | (_BV(BORF)) | 
+                            (_BV(EXTRF)) | (_BV(PORF))); */
 
   /* Now reset the status register */
   MCUCSR = 0;

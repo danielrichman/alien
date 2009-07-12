@@ -18,9 +18,30 @@
 #ifndef ALIEN_LOG_HEADER
 #define ALIEN_LOG_HEADER
 
-#define log_state_null     0
+#define log_state_initreset        0    /* Init - 80 clocks */
+#define log_state_reset            1    /* Send reset - CMD0, check */
+#define log_state_getocr           2    /* Check voltage info - CMD8 */
+#define log_state_readywait        3    /* Send CMD1 until it's ready */
+#define log_state_setblklen        4    /* Send SET BLOCKLEN command (16) */
+#define log_state_readsuper_r      5    /* Read Superblock - Response */
+#define log_state_readsuper_s      6    /* Read Superblock - Data Token */
+#define log_state_readsuper_d      7    /* Read Superblock - Data! */
+#define log_state_idle             8    /* Waiting for data, write CMD24 */
+#define log_state_writing_super    9    /* Writing superblock */
+#define log_state_writewait_super  10   /* Waiting for write finish */
+#define log_state_writecheck_super 11   /* CMD13: Check status */
+#define log_state_write_data       12   /* Write data CMD24 */
+#define log_state_writing_data     13   /* Writing data */
+#define log_state_writewait_data   14   /* Waiting for write finish */
+#define log_state_writecheck_data  15   /* CMD13: Check status */
 
-extern uint8_t log_state, log_header;
+#define log_timeout_max          250    /* Don't hang around */
+#define log_timeout_write_max    4000 
+
+extern uint8_t log_state;
+
+uint8_t crc7_byte_update(uint8_t crc, uint8_t b);
+#define crc7_finish(crc)   (((crc) << 1) | 0x01)
 
 void log_start();
 void log_init();

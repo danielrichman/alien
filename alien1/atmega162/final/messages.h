@@ -24,6 +24,8 @@
 /* $$A1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<N-LATITUDE DD.DDDDDD>,
  * <E-LONGITUDE DDD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FIX_AGE_HEXDUMP>,
  * <GPS_SAT_COUNT>,<TEMPERATURE_HEXDUMP>,*<CHECKSUM><NEWLINE> */
+/* WARNING: Any Hexdump fields will be subject to Endian-ness. 
+ * AVR is little endian */
 
 #define messages_max_length 75
 

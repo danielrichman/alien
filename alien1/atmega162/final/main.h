@@ -18,6 +18,8 @@
 #ifndef ALIEN_MAIN_HEADER
 #define ALIEN_MAIN_HEADER
 
+#include <stdlib.h>
+
 /* Define the divide function that we use, just an alias to some libc stuff */
 extern div_t udiv(int __num, int __denom) __asm__("__udivmodhi4") 
                                                                __ATTR_CONST__;
