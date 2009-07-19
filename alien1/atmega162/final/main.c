@@ -37,8 +37,6 @@
 
 int main()
 {
-  /* Setup everything (except SMS which competes with gps for 
-   * the UART, is only enabled when it is needed */
   camera_init();
   gps_init();
   log_init();
