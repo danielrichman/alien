@@ -24,8 +24,6 @@
 #include "../final/sms.c"
 payload_message sms_data;
 
-/* make -sBj5 smstest.hex.upload && stty -F /dev/ttyUSB0 cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts && cat /dev/ttyUSB0 */
-
 volatile uint8_t msg_has_finished;
 
 uint8_t messages_get_char(payload_message *data)

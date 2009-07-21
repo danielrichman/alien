@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2008  Daniel Richman
+    Copyright (C) 2008  Daniel Richman & Simrun Basuita
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,47 +19,7 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 
-#include "../final/messages.c"
-
-uint8_t radio_state = radio_state_not_txing;
-uint8_t log_state = log_state_reset;  /* messages.c will not call */
-
-void send_char(uint8_t c)
-{
-  loop_until_bit_is_set(UCSR0A, UDRE0);
-  UDR0 = c;
-}
-
-void send_char_hd(uint8_t c)
-{
-  send_char(hexdump_a(c));
-  send_char(hexdump_b(c));
-}
-
-void radio_send()
-{
-
-}
-
 int main(void)
 {
-  uint8_t c;
-
-       /* Setup UART */
-  UBRR0L = 207;
-  UCSR0B = ((_BV(TXEN0))  | (_BV(RXEN0)));
-
-       /* Spam... */
-  for (;;)
-  {
-    messages_push();
-
-    do
-    {
-      c = messages_get_char(&radio_data);
-      send_char(c);
-    }
-    while (c != 0);
-  }
+  return 0;
 }
-

@@ -19,12 +19,11 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 
-/* Simulate timer1.c and timer3.c main.c and messages.c and add debugging hacks */
+/* Simulate timer1.c and timer3.c main.c and messages.c and add 
+ * debugging hacks */
 #include "../final/temperature.c"
 payload_message latest_data;
 extern uint8_t temperature_flags, temperature_ext_crc, temperature_int_crc;
-
-/* make -sBj5 temptest.hex.upload && stty -F /dev/ttyUSB0 cs8 4800 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts && cat /dev/ttyUSB0 */
 
 void send_char(uint8_t c)
 {

@@ -16,18 +16,37 @@
 #    For a full copy of the GNU General Public License, 
 #    see <http://www.gnu.org/licenses/>.
 
-default : 
-	$(MAKE) -C alien1/atmega162/final 
-	$(MAKE) -C alien1/atmega162/tests 
-	$(MAKE) -C misc-c/arduino-168
-	$(MAKE) -C misc-c/pc
- 
-clean :
-	$(MAKE) -C alien1/atmega162/final clean
-	$(MAKE) -C alien1/atmega162/tests clean
-	$(MAKE) -C misc-c/arduino-168 clean
-	$(MAKE) -C misc-c/pc clean
+F_CPU = 16000000
+mmcu = atmega168
 
-.PHONY : clean default
-.DEFAULT_GOAL := default
+cfiles   := $(wildcard *.c)
+hexfiles := $(patsubst %.c,%.hex,$(cfiles))
+
+avr_gcc = avr-gcc
+avr_objcopy = avr-objcopy
+avr_size = avr-size
+avrdude = avrdude
+
+CFLAGS   = -mmcu=$(mmcu) -DF_CPU=$(F_CPU) -pipe -Wall -pedantic -O2
+MAPFLAGS = -Wl,-Map,
+
+all : $(hexfiles)
+
+%.elf : %.c
+	$(avr_gcc)  $(CFLAGS) -o $@ $<
+	$(avr_size) --common $@
+
+%.hex : %.elf
+	$(avr_objcopy) -O ihex $< $@
+
+%.hex.upload : %.hex
+	$(avrdude) -V -F -C /etc/avrdude.conf -b 19200 \
+	           -p $(mmcu) -P /dev/ttyUSB0 -c stk500v1 \
+	           -U flash:w:$<
+
+clean :
+	rm -f *.hex 
+
+.PHONY : clean
+.DEFAULT_GOAL := all
 

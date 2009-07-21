@@ -24,10 +24,8 @@
 #include "../final/sms.c"
 payload_message sms_data;
 
-/* make -sBj5 smstest.hex.upload */
-/* stty -F /dev/ttyUSB0 cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts && cat /dev/ttyUSB0 */
-
-uint8_t test_message[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'A', 'L', 'I', 'E', 'N', 's' };
+uint8_t test_message[] = { 'H', 'e', 'l', 'l', 'o', ' ', 
+                           'A', 'L', 'I', 'E', 'N', 's' };
 uint8_t test_message_c;
 
 uint8_t messages_get_char(payload_message *data)
