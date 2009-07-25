@@ -15,18 +15,6 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-/* mv arduino-sdspitest.arduino-c arduino-sdspitest.arduino.c &&
-   avr-gcc -mmcu=atmega168 -DF_CPU=16000000 -Wall -pedantic -O2 -o spitest.elf arduino-sdspitest.arduino.c && 
-   mv arduino-sdspitest.arduino.c arduino-sdspitest.arduino-c &&
-   avr-objcopy -O ihex spitest.elf spitest.hex &&
-   avr-size spitest.hex &&
-   avrdude -V -F -C /etc/avrdude.conf \
-		-p atmega168 -P /dev/ttyUSB0 -c stk500v1 -b 19200 \
-		-U flash:w:spitest.hex &&
-   rm spitest.elf spitest.hex &&
-   stty -F /dev/ttyUSB0 cs8 115200 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts && 
-   cat /dev/ttyUSB0 | tee dump.tmp */
-
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
@@ -34,7 +22,8 @@
 #define SS_HIGH  PORTB |=   _BV(PB2)
 #define SS_LOW   PORTB &= ~(_BV(PB2))
 
-#define num_to_char(number)   ((number) < 10 ? ('0' + (number)) : (('A' - 10) + (number)) )
+#define num_to_char(number)   ((number) < 10 ? ('0' + (number)) :    \
+                                            (('A' - 10) + (number)))
 
 #define first_four(byte)       (0x0F & (byte))
 #define  last_four(byte)      ((0xF0 & (byte)) >> 4)
@@ -66,26 +55,6 @@ uint8_t spi_byte(uint8_t b)
   send_char('\n');
 
   return r;
-}
-
-uint8_t crc7_byte_update(uint8_t crc, uint8_t b)
-{
-  uint8_t i;
-
-  for (i = 0x80; i != 0; i = i >> 1)
-  {
-    crc = crc << 1;
-
-    if ((b & i) || (crc & 0x80))
-    {
-      if (!((b & i) && (crc & 0x80)))
-      {
-        crc ^= 0x09;
-      }
-    }
-  }
-
-  return crc & 0x7f;
 }
 
 int main(void)
