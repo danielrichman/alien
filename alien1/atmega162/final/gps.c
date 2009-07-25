@@ -92,8 +92,7 @@ ISR (USART0_RXC_vect)
     gps_checksum = 0;
     gps_next_field();
 
-    /* Reset the gps_data struct! Use c as a temp var */
-    /* This will also reset the fix_age variable      */
+    /* Reset the gps_data struct, This will also reset the fix_age variable */
     for (i = 0; i < sizeof(gps_data); i++)
       ((uint8_t *) &gps_data)[i] = 0;
 
