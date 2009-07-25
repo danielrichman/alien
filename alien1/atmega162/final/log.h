@@ -35,8 +35,8 @@
 #define log_state_writewait_data   14   /* Waiting for write finish */
 #define log_state_writecheck_data  15   /* CMD13: Check status */
 
-#define log_state_deselect_idle    101  /* Wind down, end loop, goto idle */
-#define log_state_deselect         102  /* Wind down, end loop, goto 0 */
+#define log_state_deselect_idle    17   /* Wind down, end loop, goto idle */
+#define log_state_deselect         18   /* Wind down, end loop, goto 0 */
 
 #define log_timeout_max          250    /* Don't hang around */
 #define log_timeout_write_max    4000 
