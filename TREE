@@ -13,3 +13,7 @@
 `-- notes
     `-- Contains random snippets and information
 
+Note that the misc-c/arduino-168 and alien1/atmega162/tests folders contain
+'test' code that uses any combination of dirty hacks, sick #defines and
+dodgey methods to bend the 'final' code into the shape we want it for testing.
+All final code is clean.

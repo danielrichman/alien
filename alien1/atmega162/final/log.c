@@ -125,6 +125,7 @@ ISR(SPI_STC_vect)
       }
 
       SPDR = 0xFF;    /* Get another byte */
+      return;         /* No going onto the switch */
     }
     else
     {
@@ -251,10 +252,9 @@ ISR(SPI_STC_vect)
           /* Success - It's ready! */
           log_state++;
 
-          /* Next: Set block length to 128 */
+          /* Next: Read Superblock */
           log_mode = log_mode_commanding;
-          log_command[0] = SDCMD(16);
-          log_command[4] = 0x80;         /* 0x00000080 = 128 */
+          log_command[0] = SDCMD(17);
         }
         else        
         {
@@ -353,7 +353,11 @@ ISR(SPI_STC_vect)
             }
           }
         }
-        else if (log_substate == 12)
+
+        SPDR = 0xFF;
+
+        log_substate++;
+        if (log_substate == 128 + 2)  /* Two CRCs, ignored */
         {
           /* By now, all tests have completed, time to get the right value. 
            * If log_position_state == 1 then use the second. Otherwise, use
@@ -369,15 +373,14 @@ ISR(SPI_STC_vect)
           if (log_position & log_quarter_megabyte_mask || log_position == 0)
           {
             /* It's bad. Use the default. */
-            log_position = log_quarter_megabyte;
+            log_position  = log_quarter_megabyte;
           }
-        }
+          else
+          {
+            /* It's ok; move onto the next quarter megabyte to write */
+            log_position += log_quarter_megabyte;
+          }
 
-        SPDR = 0xFF;
-
-        log_substate++;
-        if (log_substate == 128 + 2)  /* Two CRCs, ignored */
-        {
           /* Success */
           log_state++;
           log_substate = 0;
@@ -404,8 +407,8 @@ ISR(SPI_STC_vect)
         /* Are we about to start a new quarter-megabyte? 
          * If we are, have we already written the superblock?
          * (check log_state == _write_data) */
-        if ( (!(log_position & log_quarter_megabyte_mask)) || 
-             log_state == log_state_write_data)
+        if ((log_position & log_quarter_megabyte_mask) || 
+            (log_state == log_state_write_data))
         {
           /* Unpack log_command, solving endianness. This 
            * actually produces very nice assembly with -O2,
@@ -559,8 +562,9 @@ ISR(SPI_STC_vect)
 
 void log_init()
 {
-  /* Set SS, MOSI and SCK as output; keep MISO as input */
-  DDRB |= ((_BV(PB4)) | (_BV(PB5)) | (_BV(PB7)));
+  /* Set SS, MOSI and SCK as output; keep MISO as input; pullup MISO */
+  DDRB  |= ((_BV(PB4)) | (_BV(PB5)) | (_BV(PB7)));
+  PORTB |= ((_BV(PB6)));
   SS_HIGH;
 
   /* Setup SPI: Interrupts on, SPI on, Master on, MSB first, Speed: f/16 */
