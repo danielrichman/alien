@@ -17,8 +17,8 @@
 
 /* This test program features a lot of squashing, hacks and macros to bend
  * log.c into the shape we want it. A lot of things are used before they are
- * squashed, forex. log_start is used in main() before being squashed to
- * hooked_SPDR for the ISR. Watch out */
+ * squashed, forex. log_start is used in main() with SPDR as its normal self
+ * before being squashed to hooked_SPDR for the ISR. Watch out */
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -42,10 +42,10 @@ uint8_t msg[] = {'H', 'e', 'l', 'l', 'o',  ' ', 'W', 'o', 'r', 'l', 'd', '\n',
                  'K', 'L', 'M', 'N', 'O',  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 
                  'W', 'X', 'Y', 'Z', '\n', '0', '1', '2', '3', '4', '5', '6', 
                  '7', '8', '9', '\n' };
-uint8_t i;
+uint8_t i, j;
 
-#ifndef LOGTEST_UNLIMITED
-uint8_t j;
+#ifndef LOGTEST_DEBUG
+  uint8_t t, b;
 #endif
 
 /* Some USART Functions */
@@ -63,15 +63,17 @@ void send_char_hd(uint8_t c)
   send_char(hexdump_b(c));
 }
 
-void send_debug_state()
-{
-  send_char_hd(log_state);
-  send_char_hd(log_substate);
-  send_char_hd(log_mode);
-  send_char('-');
-  send_char_hd(j);
-  send_char_hd(i);
-}
+#ifdef LOGTEST_DEBUG
+  void send_debug_state()
+  {
+    send_char_hd(log_state);
+    send_char_hd(log_substate);
+    send_char_hd(log_mode);
+    send_char('-');
+    send_char_hd(j);
+    send_char_hd(i);
+  }
+#endif
 
 int main(void)
 {
@@ -88,22 +90,30 @@ int main(void)
   for (;;)    sleep_mode();
 }
 
-/* Replace log_start */
-#undef log_start
-#define log_start()  hooked_SPDR = 0xFF
-
 /* Our replacement ISR */
 ISR(SPI_STC_vect)
 {
-  /* Debug the log_state before running the function */
-  send_debug_state();
-  send_char(' ');
+  #ifdef LOGTEST_DEBUG
+    /* Debug the log_state before running the function */
+    send_debug_state();
+    send_char(' ');
+  #endif
 
   /* Grab the received char and send it via the debug UART */
   hooked_SPDR = SPDR;
 
-  send_char_hd(hooked_SPDR);
-  send_char(' ');
+  #ifdef LOGTEST_DEBUG
+    send_char_hd(hooked_SPDR);
+    send_char(' ');
+  #endif
+
+  #ifndef LOGTEST_DEBUG
+    /* Flag the fact that a superblock has been written */
+    if (log_state == log_state_writing_super)
+    {
+      j = 1;
+    }
+  #endif
 
   if (log_state == log_state_deselect_idle ||
       log_state == log_state_deselect)
@@ -112,24 +122,46 @@ ISR(SPI_STC_vect)
     hooked_function();
 
     /* So reset and restart */
-    #ifndef LOGTEST_UNLIMITED
-    if (j < 5)
-    {
-      log_start();
-      SPDR = hooked_SPDR;
+    #ifdef LOGTEST_DEBUG
+      if (j < 5)
+      {
+        log_start();
 
-      i = 0;
-      j++;
-    }
+        i = 0;
+        j++;
+      }
     #else
-    log_start();
-    i = 0;
+      log_start();
+      i = 0;
 
-    SPDR = hooked_SPDR;
+      if (j == 1)
+      {
+        /* Flag the sending of a superblock */
+        send_char('\n');
+        j = 0;
+      }
+
+      if (log_state != log_state_idle)
+      {
+        /* What error occured? */
+        send_char_hd(t);
+        send_char_hd(b);
+        send_char(' ');
+      }
+      else
+      {
+        send_char('d');
+      }
     #endif
   }
   else
   {
+    #ifndef LOGTEST_DEBUG
+      /* Backup state incase of error, so we know where it failed */
+      t = log_state;
+      b = hooked_SPDR;
+    #endif
+
     /* The ISR will continue looping */
     hooked_function();
 
@@ -137,13 +169,15 @@ ISR(SPI_STC_vect)
     SPDR = hooked_SPDR;
   }
 
-  /* Debug dump the transmitted character */
-  send_char_hd(hooked_SPDR);
-  send_char(' ');
+  #ifdef LOGTEST_DEBUG 
+    /* Debug dump the transmitted character */
+    send_char_hd(hooked_SPDR);
+    send_char(' ');
 
-  /* And the new log_state */
-  send_debug_state();
-  send_char('\n');
+    /* And the new log_state */
+    send_debug_state();
+    send_char('\n');
+  #endif
 }
 
 /* Now squash log.c's ISR with some macros. */

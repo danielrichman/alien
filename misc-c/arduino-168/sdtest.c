@@ -147,13 +147,13 @@ int main(void)
   spi_byte(0x40 | 24);
   spi_byte(0x00);
   spi_byte(0x00);
-  spi_byte(0x00);
+  spi_byte(0x01);
   spi_byte(0x00);
   spi_byte(0x00);
 
   while (spi_byte(0xFF) == 0xFF);
   spi_byte(0xFE);
-  for (j = 0; j < 128; j++) spi_byte(0x55);
+  for (j = 0; j < 128; j++) spi_byte('U');
   for (i = 0; i < 6;   i++) spi_byte(0xFF);
   while (spi_byte(0xFF) != 0xFF);
 

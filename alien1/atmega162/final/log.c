@@ -139,10 +139,10 @@ ISR(SPI_STC_vect)
     switch (log_state)
     {
       case log_state_initreset:
-        /* The card needs 80 clocks (10 bytes) atleast to intialise */
+        /* The card needs 80 clocks (10 bytes) atleast to intialise. */
         log_substate++;
 
-        if (log_substate == 10)
+        if (log_substate == 100)
         {
           /* Next status: _reset, CMD0 */
           log_state++;
@@ -419,7 +419,7 @@ ISR(SPI_STC_vect)
           log_command[4] = (log_position & 0x000000FF); 
 
           log_state = log_state_writing_data;
-          log_position++;
+          log_position += 128;
         }
         else
         {

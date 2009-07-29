@@ -50,17 +50,4 @@
 #define PB6   4
 #define PB7   5
 
-#define main main_hook
 #include "../../alien1/atmega162/tests/logtest.c"
-#undef main
-
-int main()
-{
-  DDRB  |= ((_BV(PB2)) | (_BV(PB3)) | (_BV(PB5)));
-  PORTB |= ((_BV(PB4)));
-  SPCR   = ((_BV(SPE)) | (_BV(MSTR)) | (_BV(SPR0)) | (_BV(SPR1)));
-  UCSR0B = ((_BV(TXEN0)));
-  UBRR0  = 8;
-
-  return main_hook();
-}
