@@ -124,36 +124,26 @@ int main(void)
   }
   while (i == 0x01);
 
-  spi_byte(0x40 | 16);
-  spi_byte(0x00);
-  spi_byte(0x00);
-  spi_byte(0x00);
-  spi_byte(0x80);
-  spi_byte(0x00);
-
-  while (spi_byte(0xFF) == 0xFF);
-  for (i = 0; i < 6; i++) spi_byte(0xFF);
-
   spi_byte(0x40 | 17);
   spi_byte(0x00);
   spi_byte(0x00);
-  spi_byte(0x00);
+  spi_byte(0x02);
   spi_byte(0x00);
   spi_byte(0x00);
 
   while (spi_byte(0xFF) == 0xFF);
-  for (j = 0; j < 150; j++) spi_byte(0xFF);
+  for (j = 0; j < 520; j++) spi_byte(0xFF);
 
   spi_byte(0x40 | 24);
   spi_byte(0x00);
   spi_byte(0x00);
-  spi_byte(0x01);
+  spi_byte(0x02);
   spi_byte(0x00);
   spi_byte(0x00);
 
   while (spi_byte(0xFF) == 0xFF);
   spi_byte(0xFE);
-  for (j = 0; j < 128; j++) spi_byte('U');
+  for (j = 0; j < 512; j++) spi_byte('A');
   for (i = 0; i < 6;   i++) spi_byte(0xFF);
   while (spi_byte(0xFF) != 0xFF);
 
@@ -170,12 +160,12 @@ int main(void)
   spi_byte(0x40 | 17);
   spi_byte(0x00);
   spi_byte(0x00);
-  spi_byte(0x00);
+  spi_byte(0x02);
   spi_byte(0x00);
   spi_byte(0x00);
 
   while (spi_byte(0xFF) == 0xFF);
-  for (j = 0; j < 150; j++) spi_byte(0xFF);
+  for (j = 0; j < 520; j++) spi_byte(0xFF);
 
   SS_HIGH;
 

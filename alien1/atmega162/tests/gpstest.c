@@ -44,6 +44,11 @@ void radio_send()
 
 }
 
+void log_tick()
+{
+
+}
+
 ISR (TIMER1_COMPA_vect)
 {
   uint8_t i, c;

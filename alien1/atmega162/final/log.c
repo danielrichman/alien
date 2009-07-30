@@ -64,25 +64,26 @@ uint8_t log_cmd8_expected_response[log_cmd8_expected_response_length] =
 /* Every first command-byte starts with 0b01xxxxxx where xxxxxx is a command */
 #define SDCMD(x)  (0x40 | x)
 
-/* We set the block length to 128 and put a message in every block. This is the
- * easiest way to handle anything that might occur due to half-written blocks 
- * etc. The first block contains location of the block to start/resume on. 
+/* The first block contains location of the block to start/resume on. 
  * This value is updated every quarter-megabyte; which will happen roughly
  * every half-hour. */
-
-#if messages_max_length > 128
-  #error log block size is too small, messages_max_length is greather than 128
-#endif
 
 #define log_quarter_megabyte_mask 0x0003FFFF
 #define log_quarter_megabyte      0x00040000
 
 /* For more information on this, see the SD Card Association's Physical layer 
- * specification, available easily w. no registration on their website. */
+ * specification, available easily with no registration on their website. */
 
+/* We must create log_tick and call it from the ISR so that log_tick can 
+ * also be artificially called by log_start() */
 ISR(SPI_STC_vect)
 {
-  uint8_t c;
+  log_tick();
+}
+
+void log_tick()
+{
+  uint8_t c, m;
   c = SPDR;
 
   /* If log_mode_commanding is set by the previous state, then that will be 
@@ -129,7 +130,7 @@ ISR(SPI_STC_vect)
     }
     else
     {
-      log_timeout  = 0;
+      log_timeout = 0;
       log_mode = log_mode_null;
     }
   }
@@ -142,7 +143,7 @@ ISR(SPI_STC_vect)
         /* The card needs 80 clocks (10 bytes) atleast to intialise. */
         log_substate++;
 
-        if (log_substate == 100)
+        if (log_substate == 10)
         {
           /* Next status: _reset, CMD0 */
           log_state++;
@@ -230,33 +231,11 @@ ISR(SPI_STC_vect)
           /* Success - It's ready! */
           log_state++;
 
-          /* Next: Set block length to 128 */
-          log_mode = log_mode_commanding;
-          log_command[0] = SDCMD(16);
-          log_command[4] = 0x80;         /* 0x00000080 = 128 */
-        }
-        else
-        {
-          log_state = log_state_deselect;
-          SS_HIGH;
-        }
-
-        SPDR = 0xFF;
-        break;
-
-      case log_state_setblklen:
-        /* Expected response: single byte; 0x00 */
-
-        if (c == 0x00)
-        {
-          /* Success - It's ready! */
-          log_state++;
-
           /* Next: Read Superblock */
           log_mode = log_mode_commanding;
           log_command[0] = SDCMD(17);
         }
-        else        
+        else
         {
           log_state = log_state_deselect;
           SS_HIGH;
@@ -303,7 +282,7 @@ ISR(SPI_STC_vect)
         break;
 
       case log_state_readsuper_d:
-        /* 128 Bytes of data... */
+        /* 512 Bytes of data... */
 
         /* The location at which we should start wriitng is a 2 byte
          * long integer, repeated three times. If there is a half-written
@@ -317,18 +296,23 @@ ISR(SPI_STC_vect)
         /* (value % 4) is the same as (value & 0x03) 
          * This represents the byte in log_position that is being considered,
          * ie. byte_reading_number % 4 */
-        #define log_position_byte    (ba(log_position)[log_substate & 0x03])
-        #define log_position_b_byte  (ba(log_position_b)[log_substate & 0x03])
+        #define log_position_byte                   \
+                     (ba(log_position)[log_position_substate & 0x03])
+        #define log_position_b_byte                 \
+                     (ba(log_position_b)[log_position_substate & 0x03])
 
-        /* We use log_timeout as a byte to store temporary stuff */
-        #define log_position_state log_timeout
+        /* Since we're dealing with 512 bytes we need a 16bit int to keep 
+         * track of log_substate. Rather than make the rest of the code
+         * use 16 bits (inefficient when it's only needed here and write)
+         * we'll rename log_timeout with a #define and use that */
+        #define log_position_substate log_timeout
 
-        if (log_substate < 4)
+        if (log_position_substate < 4)
         {
           /* Reading the value */
           log_position_byte = c;
         }
-        else if (log_substate < 8)
+        else if (log_position_substate < 8)
         {
           /* Read the second value whilst storing the first */
           log_position_b_byte = c;
@@ -336,12 +320,12 @@ ISR(SPI_STC_vect)
           if (log_position_byte != c)
           {
             /* Flag the fact that the second is not the same to the first */
-            log_position_state = 1;
+            log_substate = 1;
           }
         }
-        else if (log_substate < 12)
+        else if (log_position_substate < 12)
         {
-          if (log_position_state != 0)
+          if (log_substate != 0)
           {
             /* If the second is not the same as the first, then compare the
              * third to the second. */
@@ -349,22 +333,22 @@ ISR(SPI_STC_vect)
             if (log_position_b_byte != c)
             {
               /* Second != Third */
-              log_position_state = 2;
+              log_substate = 2;
             }
           }
         }
 
         SPDR = 0xFF;
 
-        log_substate++;
-        if (log_substate == 128 + 2)  /* Two CRCs, ignored */
+        log_position_substate++;
+        if (log_position_substate == 512 + 2)  /* Two CRCs, ignored */
         {
           /* By now, all tests have completed, time to get the right value. 
-           * If log_position_state == 1 then use the second. Otherwise, use
-           * the first. If we're using the first it is already in the right 
+           * If log_substate == 1 then use the second. Otherwise, use the
+           * first. If we're using the first it is already in the right 
            * place. Using the second we must move position_b to position... */
 
-          if (log_position_state == 1)
+          if (log_substate == 1)
           {
             log_position = log_position_b;
           }
@@ -384,7 +368,7 @@ ISR(SPI_STC_vect)
           /* Success */
           log_state++;
           log_substate = 0;
-          log_position_state = 0;
+          log_position_substate = 0;
 
           /* Next: Run on into _idle, which prepares to write data */
         }
@@ -396,7 +380,7 @@ ISR(SPI_STC_vect)
 
         #undef log_position_byte
         #undef log_position_b_byte
-        #undef log_position_state
+        #undef log_position_substate
 
       case log_state_idle:
       case log_state_write_data:
@@ -419,7 +403,7 @@ ISR(SPI_STC_vect)
           log_command[4] = (log_position & 0x000000FF); 
 
           log_state = log_state_writing_data;
-          log_position += 128;
+          log_position += 512;
         }
         else
         {
@@ -440,7 +424,7 @@ ISR(SPI_STC_vect)
           {
             /* Good, now transmit data token... */
             SPDR = 0xFE;
-            log_substate++;
+            log_substate = 1;
           }
           else
           {
@@ -452,33 +436,60 @@ ISR(SPI_STC_vect)
         }
         else
         {
+          /* Just like when we were reading the superblock, we need a 16 bit 
+           * integer to represent the count of 512 bytes that we are writing.
+           * To save .text and .bss space, we repurpose log_timeout. */
+          #define log_writing_substate  log_timeout
+
           if (log_state == log_state_writing_super)
           {
-            if (log_substate < 12 + 1)
+            if (log_writing_substate < 12)
             {
               /* Minus one, modulo 4 to repeat 4 bytes 3 times 
                * Doing & 0x03 is the same as % 4, just faster */
-              SPDR = ba(log_position)[ (log_substate - 1) & 0x03 ];
+              SPDR = ba(log_position)[ (log_writing_substate) & 0x03 ];
             }
             else
             {
               SPDR = 0x00;
             }
+
+            log_writing_substate++; 
           }
-          else /* writing_data */
+          else
           {
-            SPDR = messages_get_char(&log_data);
+            /* writing_data */
+            if (log_writing_substate < 512)
+            {
+              m = messages_get_char(&log_data);
+
+              /* If it's the end of the message, don't set SPDR, the loop will
+               * pause, and when log_start is called fresh data will be ready */
+              if (m != 0)
+              {
+                SPDR = m;
+                log_writing_substate++; 
+              }
+            }
+            else
+            {
+              /* Two ignored CRCs */
+              SPDR = 0xFF;
+              log_writing_substate++; 
+            }
           }
 
-          log_substate++; 
-
-          if (log_substate == 128 + 1 + 2)  /* one data token and 2 crcs */
+          /* 512 + 2: 512 bytes and 2 crcs */
+          if (log_writing_substate == 512 + 2)
           {
             /* Next: Wait for data_response token */
             log_mode = log_mode_waiting;
             log_state++;
             log_substate = 0;
+            log_writing_substate = 0;
           }
+
+          #undef log_writing_substate
         }
         break;
 

@@ -41,6 +41,11 @@ void radio_send()
 
 }
 
+void log_tick()
+{
+
+}
+
 int main(void)
 {
   uint8_t c;

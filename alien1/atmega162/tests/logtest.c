@@ -35,12 +35,12 @@ extern uint16_t log_timeout;
 extern uint32_t log_position, log_position_b;
 
 /* From Radio Test */
-uint8_t msg[] = {'H', 'e', 'l', 'l', 'o',  ' ', 'W', 'o', 'r', 'l', 'd', '\n',
+uint8_t msg[] = {'H', 'e', 'l', 'l', 'o',  ' ', 'W', 'o', 'r', 'l', 'd', ':',
                  'a', 'b', 'c', 'd', 'e',  'f', 'g', 'h', 'i', 'j', 'k', 'l', 
                  'm', 'n', 'o', 'p', 'q',  'r', 's', 't', 'u', 'v', 'w', 'x', 
                  'y', 'z', 'A', 'B', 'C',  'D', 'E', 'F', 'G', 'H', 'I', 'J', 
                  'K', 'L', 'M', 'N', 'O',  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 
-                 'W', 'X', 'Y', 'Z', '\n', '0', '1', '2', '3', '4', '5', '6', 
+                 'W', 'X', 'Y', 'Z', '-', '0', '1', '2', '3', '4', '5', '6', 
                  '7', '8', '9', '\n' };
 uint8_t i, j;
 
@@ -69,6 +69,8 @@ void send_char_hd(uint8_t c)
     send_char_hd(log_state);
     send_char_hd(log_substate);
     send_char_hd(log_mode);
+    send_char_hd(ba(log_timeout)[1]);
+    send_char_hd(ba(log_timeout)[0]);
     send_char('-');
     send_char_hd(j);
     send_char_hd(i);
@@ -86,7 +88,13 @@ int main(void)
 
   /* Start! */
   sei();
-  log_start();
+
+  /* We do not start the loop by calling log_tick/log_start, for accessing
+   * variables in both ISRs and the main routine creates bad problems
+   * (solved by declaring those variables volatile). I don't want to do that,
+   * so will start it this way */
+  SPDR = 0xFF;
+
   for (;;)    sleep_mode();
 }
 
@@ -116,24 +124,32 @@ ISR(SPI_STC_vect)
   #endif
 
   if (log_state == log_state_deselect_idle ||
-      log_state == log_state_deselect)
+      log_state == log_state_deselect      ||
+      i == sizeof(msg))
   {
-    /* The ISR will not set SPDR - it's finished */
+    /* Due to whatever reason, The ISR will not set SPDR - it's finished */
     hooked_function();
 
     /* So reset and restart */
     #ifdef LOGTEST_DEBUG
-      if (j < 5)
+      if (i == sizeof(msg))
       {
-        log_start();
-
+        /* End of message. Reset message pointer, increase j */
         i = 0;
         j++;
+
+        /* Continue */
+        log_start();
+        SPDR = hooked_SPDR;
+      }
+      else if (j < 30)
+      {
+        /* End of message, or failure. Only continue if we've 
+         * sent under 30 messages */
+        log_start();
+        SPDR = hooked_SPDR;
       }
     #else
-      log_start();
-      i = 0;
-
       if (j == 1)
       {
         /* Flag the sending of a superblock */
@@ -141,17 +157,29 @@ ISR(SPI_STC_vect)
         j = 0;
       }
 
-      if (log_state != log_state_idle)
+      /* Why has the loop ended? Find out and report it */
+      if (i == sizeof(msg))
       {
-        /* What error occured? */
+        /* End of message. Reset message pointer */
+        send_char('d');
+        i = 0;
+      }
+      else if (log_state == log_state_idle)
+      {
+        /* End of block. */
+        send_char('b');
+      }
+      else
+      {
+        /* Failure. What error occured? */
         send_char_hd(t);
         send_char_hd(b);
         send_char(' ');
       }
-      else
-      {
-        send_char('d');
-      }
+
+      /* Ensure that the loop continues */
+      log_start();
+      SPDR = hooked_SPDR;
     #endif
   }
   else
