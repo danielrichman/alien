@@ -16,26 +16,10 @@
 */
 
 #include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
 #include <stdint.h>
-#include <stdlib.h>
-
 #include "camera.h"
-#include "gps.h"
-#include "hexdump.h"
-#include "log.h"
-#include "main.h"
-#include "messages.h"
-#include "radio.h"
-#include "sms.h"
-#include "statusled.h"
-#include "temperature.h"
-#include "timer1.h"
-#include "timer3.h"
-#include "watchdog.h"
 
-/* NOTE: The camera is on Port A, Outputs 3 (focus) and 2 (fullshutter). */
+/* The camera is on Port A, Outputs 3 (focus) and 2 (fullshutter). */
 
 /* How long to wait between taking photos, in seconds.
  * Cannot be < (camera_hold_focus + camera_hold_both) */
@@ -61,7 +45,7 @@ void camera_proc()
      * camera_state++ - so it's the only one that break;s */
 
     case camera_state_off:
-      PORTA &= ~((_BV(PA3)) | (_BV(PA2)));
+      PORTA &= ~((1 << PA3) | (1 << PA2));
       camera_state = 0;
       break;
 
@@ -69,11 +53,11 @@ void camera_proc()
      * focus has PB0 set, and both have state++ */
 
     case camera_state_both:
-      PORTA |= _BV(PA2);
+      PORTA |= (1 << PA2);
       /* Run on, over the next case, to set PA3 */
 
     case camera_state_focus:
-      PORTA |= _BV(PA3);
+      PORTA |= (1 << PA3);
       /* Run on to increment _state */
 
     default:
@@ -85,7 +69,8 @@ void camera_proc()
 
 void camera_init()
 {
-  PORTA &= ~((_BV(PA3))  | (_BV(PA2)));    /* Both off */
-  DDRA  |=  ((_BV(DDA3)) | (_BV(DDA2)));   /* Both outputs */
+  /* Set both OFF and as Outputs */
+  PORTA &= ~((1 << PA3)  | (1 << PA2));
+  DDRA  |=  ((1 << DDA3) | (1 << DDA2));
 }
 

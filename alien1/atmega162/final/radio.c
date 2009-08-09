@@ -16,29 +16,13 @@
 */
 
 #include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
 #include <stdint.h>
-#include <stdlib.h>
-
-#include "camera.h"
-#include "gps.h"
-#include "hexdump.h"
-#include "log.h"
-#include "main.h"
-#include "messages.h"
 #include "radio.h"
-#include "sms.h"
-#include "statusled.h"
-#include "temperature.h"
-#include "timer1.h"
-#include "timer3.h"
-#include "watchdog.h"
+#include "messages.h"
 
-/* The radio will be on gpio 0 and 1.
- * Arduino gpio0 = Port B, PB0; gpio1 = Port B, PB1 */
-
-/* radio_state #defines are in radio.h */
+/* The radio is on Port B, Outputs 0 (mark) and 1 (space). */
+/* A potential dividor is created between pins 0 and 1 - one must be a high
+ * output, and one must be a low output */
 
 #define radio_space             0
 #define radio_mark              1
@@ -66,8 +50,8 @@ void radio_proc()
       break;
 
     case radio_state_data_bits:
-      rb = radio_char & _BV(radio_substate);   /* Select the bit */
-      radio_substate++;                        /* Next bit on next loop */
+      rb = radio_char & (1 << radio_substate);  /* Select the bit */
+      radio_substate++;                         /* Next bit on next loop */
 
       if (radio_substate == radio_no_of_bits)
       {
@@ -118,26 +102,25 @@ void radio_proc()
   if (rb)
   {
     /* Mark:  PB0 on PB1 off */
-    PORTB &= ~(_BV(PB1));
-    PORTB |=   _BV(PB0);
+    PORTB &= ~(1 << PB1);
+    PORTB |=  (1 << PB0);
   }
   else 
   {
     /* Space: PB1 on PB0 off */
-    PORTB &= ~(_BV(PB0));
-    PORTB |=   _BV(PB1);
+    PORTB &= ~(1 << PB0);
+    PORTB |=  (1 << PB1);
   }
 }
 
 void radio_init()
 {
-       /* Setup Radio Outputs */
-  DDRB  |= _BV(DDB0);     /* Set portB, pin0 as an output.   */
-  DDRB  |= _BV(DDB1);     /* Set portB, pin1 as an output.   */
+  /* Setup Radio Outputs - both as outputs */
+  DDRB  |= (1 << DDB0);
+  DDRB  |= (1 << DDB1);
 
-       /* Idle state = mark   */
-  PORTB &= ~(_BV(PB1));
-  PORTB |=   _BV(PB0);
+  /* Idle state = mark (PB1 defaults to off) */
+  PORTB |= (1 << PB0);
 }
 
 /* This function is called after placing data in radio_data,

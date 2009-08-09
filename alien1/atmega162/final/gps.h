@@ -30,7 +30,6 @@ void gps_init();
 /* Other things need access to this in order to take the data away, 
  * specifically messages.c and messages_gps_data_push()             */
 extern gps_information gps_data;
-extern uint8_t gps_rx_ok;
 
 #endif 
 

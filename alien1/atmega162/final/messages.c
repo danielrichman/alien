@@ -15,34 +15,23 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
+#include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
-
-#include "camera.h"
-#include "gps.h"
+#include "messages.h"
 #include "hexdump.h"
 #include "log.h"
 #include "main.h"
-#include "messages.h"
 #include "radio.h"
 #include "sms.h"
-#include "statusled.h"
-#include "temperature.h"
-#include "timer1.h"
-#include "timer3.h"
-#include "watchdog.h"
 
-/* NOTE: messages.h has a hardcoded max-length for messages. If the format
- * is changed, you must update it */
+/* NOTE: messages.h has a hardcoded max-length for messages, which must be 
+ * kept up to date! */
 
 /* $$A1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<N-LATITUDE DD.DDDDDD>,
  * <E-LONGITUDE DDD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FIX_AGE_HEXDUMP>,
- * <GPS_SAT_COUNT>,<TEMPERATURE_HEXDUMP>,*<CHECKSUM><NEWLINE> */
-/* WARNING: Any Hexdump fields will be subject to Endian-ness. 
- * AVR is little endian */
+ * <GPS_SAT_COUNT>,<TEMPERATURE_HEXDUMP>,<MCUCSR,GPS_RX_OK HEXDUMP>
+ * *<CHECKSUM><NEWLINE> */
 
 /* Message Buffers: see messages.h for more info */
 payload_message latest_data, log_data, radio_data, sms_data;
@@ -57,9 +46,10 @@ payload_message latest_data, log_data, radio_data, sms_data;
 #define message_send_field_gpsfixage   6
 #define message_send_field_gpssatc     7
 #define message_send_field_temperature 8
-#define message_send_field_checksum    9
-#define message_send_field_nl          10
-#define message_send_field_end         11
+#define message_send_field_state       9
+#define message_send_field_checksum    10
+#define message_send_field_nl          11
+#define message_send_field_end         12
 
 /* payload_message.message_send_fstate */
 #define message_send_fstate_gpstime_hh      0
@@ -90,15 +80,16 @@ uint16_t powten[5] = { 1, 10, 100, 1000, 10000 };
 #define  scopyba(source, type)       scopys(ba(source), sizeof(source), type)
 
 /* scopy types */
-#define scopy_type_null     0x00
-#define scopy_type_field    0x01
-#define scopy_type_fstate   0x02
-#define scopy_type_hexdump  0x04
+#define scopy_type_null        0x00
+#define scopy_type_field       0x01
+#define scopy_type_fstate      0x02
+#define scopy_type_hexdump     0x04
 
 /* Gets the next character to send */
 uint8_t messages_get_char(payload_message *data)
 {
-  uint8_t c;       /* Char to return     */
+  uint8_t c;       /* Char to return */
+  uint8_t t;       /* Another Temporary Variable */
   div_t divbuf;    /* Temporary divide result storage */
 
   /* scopy enabling values */
@@ -232,7 +223,39 @@ uint8_t messages_get_char(payload_message *data)
       break;
 
     case message_send_field_gpsfixage:
-      scopyba(data->system_location.fix_age, scopy_type_hexdump)
+      /* Compensate for the endian-ness */
+      if (data->message_send_fsubstate == 2)
+      {
+        c = ',';
+        data->message_send_field++;
+        data->message_send_fstate = 0;
+        data->message_send_fsubstate = 0;
+      }
+      else
+      {
+        if (data->message_send_fsubstate == 0)
+        {
+          t = (data->system_fix_age & 0xFF00) >> 8;
+        }
+        else
+        {
+          t =  data->system_fix_age & 0x00FF;
+        }
+
+        if (data->message_send_fstate == 0)
+        {
+          c =  last_four(t);
+          data->message_send_fstate = 1;
+        }
+        else
+        {
+          c = first_four(t);
+          data->message_send_fstate = 0;
+          data->message_send_fsubstate++;
+        }
+
+        c = num_to_char(c);
+      }
       break;
 
     case message_send_field_gpssatc:
@@ -241,6 +264,10 @@ uint8_t messages_get_char(payload_message *data)
 
     case message_send_field_temperature:
       scopyba(data->system_temp, scopy_type_hexdump)
+      break;
+
+    case message_send_field_state:
+      scopyba(data->system_state, scopy_type_hexdump)
       break;
 
     case message_send_field_checksum:
@@ -346,14 +373,21 @@ void messages_push()
 {
   if (radio_state == radio_state_not_txing)
   {
-    radio_data = latest_data;   /* Update the radio's copy */
-    radio_send();               /* Go go go! */
+    /* Update the radio's copy, and begin transmission! */
+    memcpy(&radio_data, &latest_data, sizeof(payload_message));
+    radio_send();
   }
 
   if (log_state == log_state_initreset || log_state == log_state_idle)
   {
-    log_data = latest_data;
+    memcpy(&log_data,   &latest_data, sizeof(payload_message));
     log_start();
+  }
+
+  if (sms_mode == sms_mode_data)
+  {
+    memcpy(&sms_data,   &latest_data, sizeof(payload_message));
+    sms_mode = sms_mode_rts;
   }
 
   latest_data.message_id++;

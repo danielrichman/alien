@@ -15,25 +15,15 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#include <avr/io.h>
 #include <avr/interrupt.h>
-#include <avr/sleep.h>
+#include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
-
-#include "camera.h"
 #include "gps.h"
 #include "hexdump.h"
-#include "log.h"
 #include "main.h"
 #include "messages.h"
-#include "radio.h"
-#include "sms.h"
-#include "statusled.h"
-#include "temperature.h"
 #include "timer1.h"
-#include "timer3.h"
-#include "watchdog.h"
 
 /* A list of fields and their index, starting from 1. The index goes up
  * every time a ',' or a '.' is encountered, and it also goes up to separate
@@ -58,9 +48,6 @@
 uint8_t gps_state, gps_checksum, gps_substate, gps_storing_maxlen, gps_prem;
 uint8_t *gps_storing_location;
 
-/* Set to 5 when $GPGGA is matched. Decreased otherwise each second */
-uint8_t gps_rx_ok;
-
 /* GPGGA sentences provide fix data */
 uint8_t gps_sentence_mask[5] = { 'G', 'P', 'G', 'G', 'A' };
 
@@ -69,9 +56,7 @@ gps_information gps_data;
 
 ISR (USART0_RXC_vect)
 {
-  uint8_t i, j;  /* General purpose temporary variables, used in the for loop
-                    that clears gps_data and the checksum checks.
-                    Should be optimised out. */
+  uint8_t j;     /* Temporary Variable, Probably will be optimised out */
   uint8_t c;     /* We store the char that we have just recieved here. */
   div_t divbuf;  /* Temporary divide result storage */
 
@@ -92,9 +77,8 @@ ISR (USART0_RXC_vect)
     gps_checksum = 0;
     gps_next_field();
 
-    /* Reset the gps_data struct, This will also reset the fix_age variable */
-    for (i = 0; i < sizeof(gps_data); i++)
-      ((uint8_t *) &gps_data)[i] = 0;
+    /* Reset the gps_data struct */
+    memset(&gps_data, 0, sizeof(gps_information));
 
     return;  /* Discard the $, wait for next char. */
   }
@@ -139,8 +123,8 @@ ISR (USART0_RXC_vect)
     if (gps_substate == 3)
     {
       /* GPS data updated, send it to the messages manager. */
-      latest_data.system_location = gps_data;
-      /* The fix_age will have been overwritten with 0      */
+      memcpy(&latest_data.system_location, &gps_data, sizeof(gps_information));
+      latest_data.system_fix_age = 0;
 
       /* Reset, ready for the next sentence */
       gps_state = gps_state_null;
@@ -330,9 +314,9 @@ void gps_next_field()
         return;
       } 
 
-      /* Good match */
-      gps_rx_ok = 5;
-
+      /* Good match - set gps_rx_ok (system_state 3..0) to 5 */
+      messages_clear_gps_rx_ok();
+      messages_set_gps_rx_ok(5);
       break;
 
     case gps_state_lat_dir:
@@ -405,13 +389,12 @@ void gps_init()
 {
   gps_state = gps_state_null;
 
-  /* UBRR = F_CPU/(16 * baudrate) - 1 
-   *      = 16000000/16b - 1
-   *      = 1000000/b - 1
-   *      = 1000000/4800 - 1 = 207.3333 */
+  /* Baudrate: 4800
+   * UBRR = F_CPU/(16 * baudrate) - 1 = 207.3333
+   * UBRR0H will be (by default) 0 */
   UBRR0L = 207;
 
   /* Enable Recieve Interrupts and UART RX mode. Don't enable TX */
-  UCSR0B = ((_BV(RXCIE0)) | (_BV(RXEN0)));
+  UCSR0B = ((1 << RXCIE0) | (1 << RXEN0));
 }
 

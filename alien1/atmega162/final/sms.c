@@ -17,23 +17,11 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <avr/sleep.h>
 #include <stdint.h>
-#include <stdlib.h>
-
-#include "camera.h"
-#include "gps.h"
-#include "hexdump.h"
-#include "log.h"
-#include "main.h"
-#include "messages.h"
-#include "radio.h"
 #include "sms.h"
-#include "statusled.h"
-#include "temperature.h"
-#include "timer1.h"
+#include "hexdump.h"
+#include "messages.h"
 #include "timer3.h"
-#include "watchdog.h"
 
 /* Deal with phone number hardcoding privacy */
 #include "phone_no_private.h"
@@ -91,8 +79,8 @@ uint8_t  sms_state, sms_mode;
 uint8_t  sms_substate, sms_tempbits;
 uint16_t sms_temp;             /* Used when constructing the message octets */
 
-#define SMS_ENABLE_ISR   UCSR1B |=   _BV(UDRIE1);
-#define SMS_DISABLE_ISR  UCSR1B &= ~(_BV(UDRIE1));
+#define SMS_ENABLE_ISR   UCSR1B |=  (1 << UDRIE1);
+#define SMS_DISABLE_ISR  UCSR1B &= ~(1 << UDRIE1);
 
 ISR (USART1_UDRE_vect)
 {
@@ -231,14 +219,13 @@ void sms_start()
 
 void sms_init()
 {
-  /* UBRR = F_CPU/(16 * baudrate) - 1 
-   *      = 16000000/16b - 1
-   *      = 1000000/b - 1
-   *      = 1000000/9600 - 1 = 103.16667 */
+  /* Baudrate: 9600
+   * UBRR = F_CPU/(16 * baudrate) - 1 = 103.16667
+   * UBRR0H will be (by default) 0 */
   UBRR1L = 103;
 
   /* Enable Transmit Mode only */
-  UCSR1B = _BV(TXEN1);
+  UCSR1B = (1 << TXEN1);
 }
 
 

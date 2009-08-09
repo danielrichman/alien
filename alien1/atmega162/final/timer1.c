@@ -17,22 +17,16 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <avr/sleep.h>
+#include <avr/wdt.h>
 #include <stdint.h>
-#include <stdlib.h>
-
+#include "timer1.h"
 #include "camera.h"
 #include "gps.h"
-#include "hexdump.h"
-#include "log.h"
-#include "main.h"
 #include "messages.h"
 #include "radio.h"
 #include "sms.h"
 #include "statusled.h"
 #include "temperature.h"
-#include "timer1.h"
-#include "timer3.h"
 #include "watchdog.h"
 
 /* TIMER1 is used for many things. It is set up to generate a 50hz interrupt,
@@ -57,6 +51,9 @@ uint8_t timer1_fifty_counter, timer1_second_counter, timer1_minute_counter;
 /* 50hz timer interrupt */
 ISR (TIMER1_COMPA_vect)
 {
+  /* Temporary Variable, Probably will be optimised out */
+  uint8_t i;
+
   /* At 50hz we want to trigger the radio. */
   radio_proc();
 
@@ -75,12 +72,15 @@ ISR (TIMER1_COMPA_vect)
     camera_proc();                             /* Take pictures */
     statusled_proc();                          /* Flashy flashy */
     messages_push();                           /* Push Messages */
-    latest_data.system_location.fix_age++;     /* Increment Age */
+    latest_data.system_fix_age++;              /* Increment Age */
 
-    /* set by gps.c, used by statusled.c */
-    if (gps_rx_ok != 0)
+    /* set by gps.c, see messages.h */
+    i = messages_get_gps_rx_ok();
+    if (i != 0)
     {
-      gps_rx_ok--;
+      i--;
+      messages_clear_gps_rx_ok();
+      messages_set_gps_rx_ok(i);
     }
 
     /* Increment the other counter */
@@ -113,6 +113,7 @@ ISR (TIMER1_COMPA_vect)
 
   /* Use these macros to try and make the logic a bit more readable */
   #define sms_idle     (sms_mode == sms_mode_null ||                          \
+                        sms_mode == sms_mode_data ||                          \
                         sms_mode == sms_mode_rts)
   #define want_to_sms  (sms_mode == sms_mode_ready ||                         \
                         sms_mode == sms_mode_rts)
@@ -126,13 +127,14 @@ ISR (TIMER1_COMPA_vect)
   {
     if (want_to_sms && temp_idle)
     {
-      /* Don't start sending smses while taking temperature! */
+      /* Don't start sending smses while taking temperature! Both SMS and 
+       * temperature use TIMER3! */
       sms_start();
     }
 
     if (want_to_temp && sms_idle)
     {
-      /* Don't take temperature and while sending a sms! t3 is required */
+      /* Don't take temperature and while sending a sms! */
       if (temperature_state == temperature_state_want_to_get)
       {
         temperature_request();
@@ -154,7 +156,7 @@ void timer1_init()
   /* (E)TIMSK:  Enable Compare Match Interrupts (Set bit OCIEnA) *
    * TCCRnB:    Clear timer on compare match    (Set bit WGMn2)  *
    * TCCRnB:    Prescaler to FCPU/256 & Enable  (Set bit CSn2)   */
-  TCCR1B  = _BV(WGM12)  | _BV(CS12);
-  TIMSK   = _BV(OCIE1A);
+  TCCR1B  = ((1 << WGM12) | (1 << CS12));
+  TIMSK   =  (1 << OCIE1A);
 }
 

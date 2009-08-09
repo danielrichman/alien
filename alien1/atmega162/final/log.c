@@ -17,23 +17,10 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <avr/sleep.h>
 #include <stdint.h>
-#include <stdlib.h>
-
-#include "camera.h"
-#include "gps.h"
-#include "hexdump.h"
 #include "log.h"
-#include "main.h"
+#include "hexdump.h"
 #include "messages.h"
-#include "radio.h"
-#include "sms.h"
-#include "statusled.h"
-#include "temperature.h"
-#include "timer1.h"
-#include "timer3.h"
-#include "watchdog.h"
 
 /* Log header can be changed by any modules during initialisation.
  * It's the first byte sent to the SD card - could contain reset info,
@@ -53,13 +40,13 @@ uint32_t log_position, log_position_b;
 uint8_t log_cmd8_expected_response[log_cmd8_expected_response_length] = 
                                          { 0x01, 0x00, 0x00, 0x01, 0xAA };
 
-/* SS   - PB4  (Master Output)
-   MOSI - PB5  (Master Output)
-   MISO - PB6  (Master Input)
-   SCK  - PB7  (Master Output) */
+#define SS       PB4     /* Master Output */
+#define MOSI     PB5     /* Master Output */
+#define MISO     PB6     /* Master Input  */
+#define SCK      PB7     /* Master Output */
 
-#define SS_HIGH  PORTB |=   _BV(PB4)
-#define SS_LOW   PORTB &= ~(_BV(PB4))
+#define SS_HIGH  PORTB |=  (1 << SS)
+#define SS_LOW   PORTB &= ~(1 << SS)
 
 /* Every first command-byte starts with 0b01xxxxxx where xxxxxx is a command */
 #define SDCMD(x)  (0x40 | x)
@@ -574,12 +561,12 @@ void log_tick()
 void log_init()
 {
   /* Set SS, MOSI and SCK as output; keep MISO as input; pullup MISO */
-  DDRB  |= ((_BV(PB4)) | (_BV(PB5)) | (_BV(PB7)));
-  PORTB |= ((_BV(PB6)));
+  DDRB  |= ((1 << SS) | (1 << MOSI) | (1 << SCK));
+  PORTB |=  (1 << MISO);
   SS_HIGH;
 
   /* Setup SPI: Interrupts on, SPI on, Master on, MSB first, Speed: f/16 */
-  SPCR = ((_BV(SPIE)) | (_BV(SPE)) | (_BV(MSTR)) | (_BV(SPR0)));
+  SPCR = ((1 << SPIE) | (1 << SPE) | (1 << MSTR) | (1 << SPR0));
 
   /* The ISR will set SPDR, which will in turn cause another interrupt after
    * that byte is transferred. log_start begins this loop. When it is done

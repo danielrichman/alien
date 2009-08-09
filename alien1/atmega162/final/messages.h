@@ -21,12 +21,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-/* $$A1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<N-LATITUDE DD.DDDDDD>,
- * <E-LONGITUDE DDD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FIX_AGE_HEXDUMP>,
- * <GPS_SAT_COUNT>,<TEMPERATURE_HEXDUMP>,*<CHECKSUM><NEWLINE> */
-/* WARNING: Any Hexdump fields will be subject to Endian-ness. 
- * AVR is little endian */
-
+/* Hardcoded messages max length. Since the length of a message can vary, this
+ * specifies the maximum, or a near-maximum. This _must_ be kept up-to-date! */
 #define messages_max_length 75
 
 /* GPS data struct */
@@ -45,14 +41,15 @@ typedef struct
   uint8_t   satc[2];
   uint8_t    alt[5];
   uint8_t  flags;     /* Expresses if it's N/S and E/W; 4 LSB ONLY! */
-  uint16_t fix_age;   /* How old the fix is, in seconds             */
 } gps_information; 
 
 /* Temperature data struct */
 typedef struct
 {
-  uint16_t internal_temperature;
-  uint16_t external_temperature;
+  uint8_t internal_msb;
+  uint8_t internal_lsb;
+  uint8_t external_msb;
+  uint8_t external_lsb;
 } temperature_data;
 
 /* Message structure */
@@ -62,13 +59,25 @@ typedef struct
 				     * will rendered into ascii-base10 */
   gps_information system_location;  /* Is already in ASCII, except 
 				     * for the 'flags' field */
+  uint16_t system_fix_age;          /* How old the fix is, in seconds  */
   temperature_data system_temp;     /* Hexdump this */
+  uint8_t system_state;             /* 7..4 - MCUCSR, 3..0 - gps_rx_ok */
 
   uint8_t message_send_field;       /* These help out the message.c */
   uint8_t message_send_fstate;      /* get_char routines */
   uint8_t message_send_fsubstate;
   uint8_t message_send_checksum;
 } payload_message;
+
+/* gps_rx_ok will need to be set multiple times. */
+#define messages_clear_gps_rx_ok()  latest_data.system_state &= ~(0x0F)
+#define messages_set_gps_rx_ok(val)                                 \
+                                    latest_data.system_state |= (0x0F & (val))
+#define messages_get_gps_rx_ok()   (latest_data.system_state & 0x0F)
+
+/* This will only need to be set once. when it is set, latest_data will be 0 
+ * (so no need to OR) */
+#define messages_set_mcucsr(val)    latest_data.system_state = (val) << 4
 
 /* Message Buffers; in order of freshness */
 extern payload_message latest_data;  /* Where the next update is built & 

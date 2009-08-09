@@ -16,30 +16,16 @@
 */
 
 #include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
 #include <stdint.h>
-#include <stdlib.h>
-
-#include "camera.h"
-#include "gps.h"
-#include "hexdump.h"
-#include "log.h"
-#include "main.h"
-#include "messages.h"
-#include "radio.h"
-#include "sms.h"
 #include "statusled.h"
+#include "gps.h"
+#include "messages.h"
 #include "temperature.h"
-#include "timer1.h"
-#include "timer3.h"
-#include "watchdog.h"
 
 /* There's a tri-colour LED on PA0 and PA1.
  * PA0 drives a red led, PA1 drives a green one. By using the 4 possible
  * combinations of PA0/1, we can have off, red, green and yellow lights.
  * statusled.c will flick between two states. */
-/* The macros that generate and decode these combinations are in the header */
 
 uint8_t statusled_flash;
 
@@ -47,15 +33,16 @@ uint8_t statusled_flash;
 #define statusled_flash_b     1
 
 /* LED controlling macros */
-#define STATUSLED_RED_ON   PORTA |=   _BV(PA0)
-#define STATUSLED_RED_OFF  PORTA &= ~(_BV(PA0))
-#define STATUSLED_GRN_ON   PORTA |=   _BV(PA1)
-#define STATUSLED_GRN_OFF  PORTA &= ~(_BV(PA1))
+#define STATUSLED_RED_ON   PORTA |=  (1 << PA0)
+#define STATUSLED_RED_OFF  PORTA &= ~(1 << PA0)
+#define STATUSLED_GRN_ON   PORTA |=  (1 << PA1)
+#define STATUSLED_GRN_OFF  PORTA &= ~(1 << PA1)
 
 void statusled_proc()
 {
   /* We can tell if there has been a write to the latest_data.system_location 
-   * because at poweron it will have been set to \0. */
+   * because at poweron it will have been set to \0, and since ASCII data gets 
+   * put in there after recieving a string from the GPS it cannot be \0 */
   if (latest_data.system_location.time[0] != '\0')
   {
     if (statusled_flash == statusled_flash_a)
@@ -69,16 +56,16 @@ void statusled_proc()
     else
     {
       /* This function will be run before increasing fix_age, so test for 0 */
-      if (latest_data.system_location.fix_age == 0)
+      if (latest_data.system_fix_age == 0)
       {
-        if ( (latest_data.system_temp.external_temperature & 
-                                       temperature_ubits_valid) &&
-             (latest_data.system_temp.internal_temperature & 
-                                       temperature_ubits_valid) &&
-            !(latest_data.system_temp.external_temperature & 
-                                       temperature_ubits_err) &&
-            !(latest_data.system_temp.internal_temperature & 
-                                       temperature_ubits_err))
+        if ( (latest_data.system_temp.external_msb & 
+                                       temperature_msb_ubits_valid) &&
+             (latest_data.system_temp.internal_msb & 
+                                       temperature_msb_ubits_valid) &&
+            !(latest_data.system_temp.external_msb & 
+                                       temperature_msb_ubits_err) &&
+            !(latest_data.system_temp.internal_msb & 
+                                       temperature_msb_ubits_err))
         {
           /* Green/Off pulsing to show that the gps and temp are good */
           STATUSLED_RED_OFF;
@@ -101,9 +88,9 @@ void statusled_proc()
       statusled_flash = statusled_flash_a;
     }
   }
-  else if (gps_rx_ok != 0)
+  else if (messages_get_gps_rx_ok() != 0)
   {
-    /* Red/Yellow pulsing to show gps rx ok, but no fix */
+    /* Red/Yellow pulsing to show gps_rx_ok (system_state 3..0), but no fix */
     STATUSLED_RED_ON;
 
     if (statusled_flash == statusled_flash_a)
@@ -138,12 +125,12 @@ void statusled_proc()
 void statusled_init()
 {
   /* Set both as outputs */
-  DDRA |= ((_BV(PA0)) | (_BV(PA1)));
+  DDRA |= ((1 << PA0) | (1 << PA1));
 
   /* Start Green if normal bootup, Yellow if WDT reset*/
   STATUSLED_GRN_ON;
 
-  if (MCUCSR & (_BV(WDRF)))
+  if (MCUCSR & (1 << WDRF))
   {
     STATUSLED_RED_ON;
   }

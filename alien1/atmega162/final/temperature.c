@@ -16,24 +16,11 @@
 */
 
 #include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
 #include <stdint.h>
-#include <stdlib.h>
-
-#include "camera.h"
-#include "gps.h"
-#include "hexdump.h"
-#include "log.h"
-#include "main.h"
-#include "messages.h"
-#include "radio.h"
-#include "sms.h"
-#include "statusled.h"
 #include "temperature.h"
+#include "messages.h"
 #include "timer1.h"
 #include "timer3.h"
-#include "watchdog.h"
 
 /* We will have temperature sensors on GPIO6 and GPIO7 (PD6 and PD7) - 
  * While I appreciate that you can have more sensors on one 1wire, we're
@@ -51,22 +38,18 @@
 #define temperature_flags_ext_ok          0x01
 #define temperature_flags_int_ok          0x02
 
-uint8_t  temperature_ext_crc, temperature_int_crc;
-uint8_t  temperature_flags, temperature_state;
-uint16_t temperature_external, temperature_internal;
+uint8_t temperature_ext_crc, temperature_int_crc;
+uint8_t temperature_flags,   temperature_state;
+uint8_t temperature_internal_msb, temperature_internal_lsb;
+uint8_t temperature_external_msb, temperature_external_lsb;
 
-#define temperature_external_lsb  (ba(temperature_external))
-#define temperature_external_msb  (ba(temperature_external) + 1)
-#define temperature_internal_lsb  (ba(temperature_internal))
-#define temperature_internal_msb  (ba(temperature_internal) + 1)
+#define TEMP_EXT_RELEASE  DDRA  &= ~(1 <<  DDA7)   /* Set to input  */
+#define TEMP_EXT_PULLLOW  DDRA  |=  (1 <<  DDA7)   /* Set to output */
+#define TEMP_EXT_READ    (PINA  &   (1 << PINA7))  /* Read bit 7    */
 
-#define TEMP_EXT_RELEASE  DDRA  &= ~(_BV(DDA7))   /* Set to input  */
-#define TEMP_EXT_PULLLOW  DDRA  |=   _BV(DDA7)    /* Set to output */
-#define TEMP_EXT_READ    (PINA  &    _BV(PINA7))  /* Read bit 7    */
-
-#define TEMP_INT_RELEASE  DDRA  &= ~(_BV(DDA6))
-#define TEMP_INT_PULLLOW  DDRA  |=   _BV(DDA6)
-#define TEMP_INT_READ    (PINA  &    _BV(PINA6))
+#define TEMP_INT_RELEASE  DDRA  &= ~(1 <<  DDA6)
+#define TEMP_INT_PULLLOW  DDRA  |=  (1 <<  DDA6)
+#define TEMP_INT_READ    (PINA  &   (1 << PINA6))
 
 #define TEMP_EXT_OK   (temperature_flags & temperature_flags_ext_ok)
 #define TEMP_INT_OK   (temperature_flags & temperature_flags_int_ok)
@@ -83,8 +66,8 @@ uint16_t temperature_external, temperature_internal;
 /* Enable timer 0, but don't configure for CTC or interrupts.
  * At FCPU/64 we can use this to perform long waits without leaving
  * the interrupt. */
-#define TEMP_BUSYWAIT_SETUP_64    TCCR0  = ((_BV(CS00)) | _BV(CS01))
-#define TEMP_BUSYWAIT_SETUP_1     TCCR0  = ((_BV(CS00)))
+#define TEMP_BUSYWAIT_SETUP_64    TCCR0  = ((1 << CS00) | (1 <<CS01))
+#define TEMP_BUSYWAIT_SETUP_1     TCCR0  =  (1 << CS00)
 #define TEMP_BUSYWAIT_SETUP_STOP  TCCR0  = 0;
 
 #define TEMP_BUSYWAIT(n)      for (TCNT0 = 0; TCNT0 < (n);)
@@ -99,8 +82,10 @@ void temperature_request()
   temperature_flags    = temperature_flags_ext_ok | temperature_flags_int_ok;
   temperature_ext_crc  = 0;
   temperature_int_crc  = 0;
-  temperature_external = 0;
-  temperature_internal = 0;
+  temperature_external_msb = 0;
+  temperature_external_lsb = 0;
+  temperature_internal_msb = 0;
+  temperature_internal_lsb = 0;
 
   /* RESET */
   temperature_reset();
@@ -156,8 +141,8 @@ void temperature_retrieve()
   /* Bytes 0 and 1 are temperature data in little endian (that's good),
    * then the rest can be ignored (but automatically shifted into the CRC
    * by readbyte). */
-  temperature_readbyte(temperature_external_lsb, temperature_internal_lsb);
-  temperature_readbyte(temperature_external_msb, temperature_internal_msb);
+  temperature_readbyte(&temperature_external_lsb, &temperature_internal_lsb);
+  temperature_readbyte(&temperature_external_msb, &temperature_internal_msb);
 
   /* Read the remaining 7 bytes, CRC and discard */
   for (i = 0; i < 7; i++)
@@ -169,13 +154,13 @@ void temperature_retrieve()
   /* For some reason, all the bits in the most significan byte of the temp.
    * should be the same. We use them to signal other things, like how good the 
    * temperature is, so check that they actually are the all 0 or 1 */
-  if (TEMP_EXT_OK && *temperature_external_msb != 0x00 &&
-                     *temperature_external_msb != 0xFF)
+  if (TEMP_EXT_OK && temperature_external_msb != 0x00 &&
+                     temperature_external_msb != 0xFF)
   {
     temperature_flags &= ~(temperature_flags_ext_ok);
   }
-  if (TEMP_INT_OK && *temperature_internal_msb != 0x00 &&
-                     *temperature_internal_msb != 0xFF)
+  if (TEMP_INT_OK && temperature_internal_msb != 0x00 &&
+                     temperature_internal_msb != 0xFF)
   {
     temperature_flags &= ~(temperature_flags_int_ok);
   }
@@ -197,61 +182,62 @@ void temperature_retrieve()
   TEMP_CHECK_CARRYON
 
   /* BIT_CLEAR */
-  /* Clear the two most significant bits in temp_ba[1], so that we can use
-   * them to signal age or invalidness. */
-  temperature_external &= ~(temperature_ubits_toggle_a | 
-                            temperature_ubits_toggle_b | 
-                            temperature_ubits_err);
-  temperature_internal &= ~(temperature_ubits_toggle_a | 
-                            temperature_ubits_toggle_b | 
-                            temperature_ubits_err);
+  /* Clear a few bits so that we can use them to signal age or invalidness. */
+  temperature_external_msb &= ~(temperature_msb_ubits_toggle_a | 
+                               temperature_msb_ubits_toggle_b | 
+                               temperature_msb_ubits_err);
+  temperature_internal_msb &= ~(temperature_msb_ubits_toggle_a | 
+                              temperature_msb_ubits_toggle_b | 
+                              temperature_msb_ubits_err);
 
   /* BIT_SET */
   /* Always set this bit to signal that it is actually a real temperature.
    * Since the latest_data will be initialised to zero, then using this
    * statusled.c can tell if temperature.c is working */
-  temperature_external |= temperature_ubits_valid;
-  temperature_internal |= temperature_ubits_valid;
+  temperature_external_msb |= temperature_msb_ubits_valid;
+  temperature_internal_msb |= temperature_msb_ubits_valid;
 
   /* We swap between setting toggle_a and toggle_b, so that it can be detected
    * in the radio and the log when the value is read or changed. Because we 
    * read the temperature at such a slow rate (1 minute), it's ok to do this
    * globally and not on a per-message basis (with SMS we don't care). */
-  if (latest_data.system_temp.external_temperature & temperature_ubits_toggle_a)
+  if (latest_data.system_temp.external_msb & temperature_msb_ubits_toggle_a)
   {
-    temperature_external |= temperature_ubits_toggle_b;
+    temperature_external_msb |= temperature_msb_ubits_toggle_b;
   }
   else
   {
-    temperature_external |= temperature_ubits_toggle_a;
+    temperature_external_msb |= temperature_msb_ubits_toggle_a;
   }
 
-  if (latest_data.system_temp.internal_temperature & temperature_ubits_toggle_a)
+  if (latest_data.system_temp.internal_msb & temperature_msb_ubits_toggle_a)
   {
-    temperature_internal |= temperature_ubits_toggle_b;
+    temperature_internal_msb |= temperature_msb_ubits_toggle_b;
   }
   else
   {
-    temperature_internal |= temperature_ubits_toggle_a;
+    temperature_internal_msb |= temperature_msb_ubits_toggle_a;
   }
 
   /* TEMP_SAVE */
   if (TEMP_EXT_OK)
   {
-    latest_data.system_temp.external_temperature  = temperature_external;
+    latest_data.system_temp.external_msb = temperature_external_msb;
+    latest_data.system_temp.external_lsb = temperature_external_lsb;
   }
   else
   {
-    latest_data.system_temp.external_temperature |= temperature_ubits_err;
+    latest_data.system_temp.external_msb |= temperature_msb_ubits_err;
   }
 
   if (TEMP_INT_OK)
   {
-    latest_data.system_temp.internal_temperature  = temperature_internal;
+    latest_data.system_temp.internal_msb = temperature_internal_msb;
+    latest_data.system_temp.internal_lsb = temperature_internal_lsb;
   }
   else
   {
-    latest_data.system_temp.internal_temperature |= temperature_ubits_err;
+    latest_data.system_temp.internal_msb |= temperature_msb_ubits_err;
   }
 
   /* Have we completed successfully? If not, set state to want_to_get and 
@@ -341,7 +327,7 @@ void temperature_readbyte(uint8_t *ext_target, uint8_t *int_target)
     if (TEMP_EXT_OK) 
     {
       temperature_crcpush(d & temperature_ext_read, &temperature_ext_crc);
-
+ 
       if ((d & temperature_ext_read) && ext_target != NULL)
       {
         *ext_target |= i;

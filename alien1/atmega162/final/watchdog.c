@@ -16,30 +16,16 @@
 */
 
 #include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
-#include <stdint.h>
-#include <stdlib.h>
-
-#include "camera.h"
-#include "gps.h"
-#include "hexdump.h"
-#include "log.h"
-#include "main.h"
-#include "messages.h"
-#include "radio.h"
-#include "sms.h"
-#include "statusled.h"
-#include "temperature.h"
-#include "timer1.h"
-#include "timer3.h"
+#include <avr/wdt.h>
 #include "watchdog.h"
+#include "messages.h"
 
 void watchdog_init()
 {
-  /* Grab the source of the reset and log it: bits 3..0 in MCUCSR 
-     log_header = MCUCSR & ((_BV(WDRF))  | (_BV(BORF)) | 
-                            (_BV(EXTRF)) | (_BV(PORF))); */
+  /* Grab the source of the reset and log it: bits 3..0 in MCUCSR. Place in 
+   * bits 7..4 in system_state */
+  messages_set_mcucsr(MCUCSR & ((_BV(WDRF))  | (_BV(BORF)) | 
+                                (_BV(EXTRF)) | (_BV(PORF))));
 
   /* Now reset the status register */
   MCUCSR = 0;

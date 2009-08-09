@@ -17,23 +17,10 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <avr/sleep.h>
 #include <stdint.h>
-#include <stdlib.h>
-
-#include "camera.h"
-#include "gps.h"
-#include "hexdump.h"
-#include "log.h"
-#include "main.h"
-#include "messages.h"
-#include "radio.h"
-#include "sms.h"
-#include "statusled.h"
-#include "temperature.h"
-#include "timer1.h"
 #include "timer3.h"
-#include "watchdog.h"
+#include "sms.h"
+#include "temperature.h"
 
 /* 1hz interrupt - enabled when needed */
 ISR (TIMER3_COMPA_vect)
@@ -58,6 +45,6 @@ void timer3_init()
 {
   /* For info, see timer1.c _init notes */
   OCR3A   = 62500;  /*  1Hz */
-  ETIMSK  = _BV(OCIE3A);
+  ETIMSK  = (1 << OCIE3A);
 }
 

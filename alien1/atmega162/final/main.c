@@ -15,22 +15,15 @@
     see <http://www.gnu.org/licenses/>.
 */
 
-#include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
-#include <stdint.h>
-#include <stdlib.h>
-
+#include "main.h"
 #include "camera.h"
 #include "gps.h"
-#include "hexdump.h"
 #include "log.h"
-#include "main.h"
-#include "messages.h"
 #include "radio.h"
 #include "sms.h"
 #include "statusled.h"
-#include "temperature.h"
 #include "timer1.h"
 #include "timer3.h"
 #include "watchdog.h"
@@ -51,6 +44,6 @@ int main()
   sei();
 
   /* Now sleep - the whole program is interrupt driven */
-  for (;;)    sleep_mode();
+  for (;;) sleep_mode();
 }
 

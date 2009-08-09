@@ -18,12 +18,6 @@
 #ifndef ALIEN_WATCHDOG_HEADER
 #define ALIEN_WATCHDOG_HEADER
 
-#include <avr/io.h>
-
-/* Including here will include for all .c files */
-#include <avr/wdt.h>
-
-/* Prototype */
 void watchdog_init();
 
 #endif 

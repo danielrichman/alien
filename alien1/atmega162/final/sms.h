@@ -32,10 +32,11 @@ extern uint8_t sms_state, sms_mode;
 #define sms_state_end           7
 
 #define sms_mode_null           0
-#define sms_mode_rts            1   /* request to send */
-#define sms_mode_waiting        2
-#define sms_mode_ready          3
-#define sms_mode_busy           4
+#define sms_mode_data           1   /* request for data */
+#define sms_mode_rts            2   /* request to send  */
+#define sms_mode_waiting        3
+#define sms_mode_ready          4
+#define sms_mode_busy           5
 
 void sms_wait();
 void sms_start();
