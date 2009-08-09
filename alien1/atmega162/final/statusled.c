@@ -59,13 +59,13 @@ void statusled_proc()
       if (latest_data.system_fix_age == 0)
       {
         if ( (latest_data.system_temp.external_msb & 
-                                       temperature_msb_ubits_valid) &&
+                                       temperature_msb_bit_valid) &&
              (latest_data.system_temp.internal_msb & 
-                                       temperature_msb_ubits_valid) &&
+                                       temperature_msb_bit_valid) &&
             !(latest_data.system_temp.external_msb & 
-                                       temperature_msb_ubits_err) &&
+                                       temperature_msb_bit_err) &&
             !(latest_data.system_temp.internal_msb & 
-                                       temperature_msb_ubits_err))
+                                       temperature_msb_bit_err))
         {
           /* Green/Off pulsing to show that the gps and temp are good */
           STATUSLED_RED_OFF;

@@ -29,10 +29,11 @@ extern uint8_t temperature_state;
 #define temperature_state_waited          3
 
 /* Bits in the MSB of the temperature to signal things (they arn't used) */
-#define temperature_ubits_toggle_a        0x8000
-#define temperature_ubits_toggle_b        0x4000
-#define temperature_ubits_err             0x2000
-#define temperature_ubits_valid           0x1000
+#define temperature_msb_bit_tempvalue_sign    0x80
+#define temperature_msb_bit_err               0x40
+#define temperature_msb_bit_valid             0x20
+#define temperature_msb_bits_toggle           0x1F
+#define temperature_toggle_add                0x01
 
 /* Prototypes */
 void temperature_request();

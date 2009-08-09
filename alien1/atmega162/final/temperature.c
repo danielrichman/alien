@@ -183,41 +183,28 @@ void temperature_retrieve()
 
   /* BIT_CLEAR */
   /* Clear a few bits so that we can use them to signal age or invalidness. */
-  temperature_external_msb &= ~(temperature_msb_ubits_toggle_a | 
-                               temperature_msb_ubits_toggle_b | 
-                               temperature_msb_ubits_err);
-  temperature_internal_msb &= ~(temperature_msb_ubits_toggle_a | 
-                              temperature_msb_ubits_toggle_b | 
-                              temperature_msb_ubits_err);
+  temperature_external_msb &= ~(temperature_msb_bit_err   |
+                                temperature_msb_bit_valid |
+                                temperature_msb_bits_toggle);
+  temperature_internal_msb &= ~(temperature_msb_bit_err   |
+                                temperature_msb_bit_valid |
+                                temperature_msb_bits_toggle);
 
   /* BIT_SET */
   /* Always set this bit to signal that it is actually a real temperature.
    * Since the latest_data will be initialised to zero, then using this
-   * statusled.c can tell if temperature.c is working */
-  temperature_external_msb |= temperature_msb_ubits_valid;
-  temperature_internal_msb |= temperature_msb_ubits_valid;
+   * statusled.c can tell if temperature.c has ever written a value */
+  temperature_external_msb |= temperature_msb_bit_valid;
+  temperature_internal_msb |= temperature_msb_bit_valid;
 
-  /* We swap between setting toggle_a and toggle_b, so that it can be detected
-   * in the radio and the log when the value is read or changed. Because we 
-   * read the temperature at such a slow rate (1 minute), it's ok to do this
+  /* So that it can be detected in the radio and the log when the value is
    * globally and not on a per-message basis (with SMS we don't care). */
-  if (latest_data.system_temp.external_msb & temperature_msb_ubits_toggle_a)
-  {
-    temperature_external_msb |= temperature_msb_ubits_toggle_b;
-  }
-  else
-  {
-    temperature_external_msb |= temperature_msb_ubits_toggle_a;
-  }
-
-  if (latest_data.system_temp.internal_msb & temperature_msb_ubits_toggle_a)
-  {
-    temperature_internal_msb |= temperature_msb_ubits_toggle_b;
-  }
-  else
-  {
-    temperature_internal_msb |= temperature_msb_ubits_toggle_a;
-  }
+  temperature_external_msb = (latest_data.system_temp.external_msb + 
+                              temperature_toggle_add) & 
+                             temperature_msb_bits_toggle;
+  temperature_internal_msb = (latest_data.system_temp.internal_msb + 
+                              temperature_toggle_add) & 
+                             temperature_msb_bits_toggle;
 
   /* TEMP_SAVE */
   if (TEMP_EXT_OK)
@@ -227,7 +214,7 @@ void temperature_retrieve()
   }
   else
   {
-    latest_data.system_temp.external_msb |= temperature_msb_ubits_err;
+    latest_data.system_temp.external_msb |= temperature_msb_bit_err;
   }
 
   if (TEMP_INT_OK)
@@ -237,7 +224,7 @@ void temperature_retrieve()
   }
   else
   {
-    latest_data.system_temp.internal_msb |= temperature_msb_ubits_err;
+    latest_data.system_temp.internal_msb |= temperature_msb_bit_err;
   }
 
   /* Have we completed successfully? If not, set state to want_to_get and 
