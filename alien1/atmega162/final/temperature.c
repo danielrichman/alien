@@ -199,12 +199,12 @@ void temperature_retrieve()
 
   /* So that it can be detected in the radio and the log when the value is
    * globally and not on a per-message basis (with SMS we don't care). */
-  temperature_external_msb = (latest_data.system_temp.external_msb + 
-                              temperature_toggle_add) & 
-                             temperature_msb_bits_toggle;
-  temperature_internal_msb = (latest_data.system_temp.internal_msb + 
-                              temperature_toggle_add) & 
-                             temperature_msb_bits_toggle;
+  temperature_external_msb |= (latest_data.system_temp.external_msb + 
+                               temperature_toggle_add) & 
+                              temperature_msb_bits_toggle;
+  temperature_internal_msb |= (latest_data.system_temp.internal_msb + 
+                               temperature_toggle_add) & 
+                              temperature_msb_bits_toggle;
 
   /* TEMP_SAVE */
   if (TEMP_EXT_OK)
