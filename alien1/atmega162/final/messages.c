@@ -368,6 +368,7 @@ uint8_t messages_get_char(payload_message *data)
   return c;
 }
 
+#include <avr/io.h>
 /* Called every second, a signal to push the data onwards */
 void messages_push()
 {
@@ -378,7 +379,7 @@ void messages_push()
     radio_send();
   }
 
-  if (log_state == log_state_initreset || log_state == log_state_idle)
+  if (log_state == log_state_initreset || log_state == log_state_datawait)
   {
     memcpy(&log_data,   &latest_data, sizeof(payload_message));
     log_start();

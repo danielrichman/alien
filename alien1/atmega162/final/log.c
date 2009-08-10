@@ -22,14 +22,11 @@
 #include "hexdump.h"
 #include "messages.h"
 
-/* Log header can be changed by any modules during initialisation.
- * It's the first byte sent to the SD card - could contain reset info,
- * for example */
 #define log_mode_null       0
 #define log_mode_commanding 1
 #define log_mode_waiting    2
 
-uint8_t  log_state, log_substate, log_mode;
+uint8_t  log_state, log_substate, log_mode, log_datawait;
 uint8_t  log_command[6];   /* 1byte command, 4byte argument, 1byte crc */
 uint16_t log_timeout;
 uint32_t log_position, log_position_b;
@@ -457,6 +454,12 @@ void log_tick()
                 SPDR = m;
                 log_writing_substate++; 
               }
+              else
+              {
+                /* Temporary state - log_start() will restore our state
+                 * to writing data; preserve substate and co */
+                log_state = log_state_datawait;
+              }
             }
             else
             {
@@ -503,6 +506,12 @@ void log_tick()
             log_mode = log_mode_commanding;
             log_command[0] = SDCMD(13);
           }
+          else if (c != 0x00)
+          {
+            /* Bad. Should be 0xFF or 0x00. */
+            log_state = log_state_deselect;
+            SS_HIGH;
+          }
         }
 
         SPDR = 0xFF;
@@ -521,16 +530,17 @@ void log_tick()
           {
             /* Success! */
             log_substate = 0;
+            messages_set_log_ok();
 
-            /* The next state will set the command itself. */
             if (log_state == log_state_writecheck_super)
             {
+              /* Super: ok, now write data */
               log_state = log_state_write_data;
             }
             else
             {
-              log_state = log_state_deselect_idle;
-              SS_HIGH;
+              /* Continue and write another block */
+              log_state = log_state_idle;
             }
           }
         }
@@ -543,19 +553,23 @@ void log_tick()
         SPDR = 0xFF;
         break;
 
-      case log_state_deselect_idle:
-        /* After deselecting, the Interrupt-loop will stop, and we wait 
-         * until log_start is called. By not setting SPDR another interrupt
-         * will not be generated. */
-        log_state = log_state_idle;
-        break;
-
       case log_state_deselect:
         /* Something broke. Deselect and go back to the beginning */
         log_state = log_state_initreset;
+        messages_clear_log_ok();
         break;
     }
   }
+}
+
+void log_start()
+{
+  if (log_state == log_state_datawait)
+  {
+    log_state = log_state_writing_data;
+  }
+
+  log_tick();
 }
 
 void log_init()

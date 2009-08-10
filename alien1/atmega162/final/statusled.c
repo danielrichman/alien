@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include "statusled.h"
 #include "gps.h"
+#include "log.h"
 #include "messages.h"
 #include "temperature.h"
 
@@ -65,22 +66,23 @@ void statusled_proc()
             !(latest_data.system_temp.external_msb & 
                                        temperature_msb_bit_err) &&
             !(latest_data.system_temp.internal_msb & 
-                                       temperature_msb_bit_err))
+                                       temperature_msb_bit_err) &&
+             messages_get_log_ok())
         {
-          /* Green/Off pulsing to show that the gps and temp are good */
+          /* Green/Off pulsing: gps, temp and log are good */
           STATUSLED_RED_OFF;
           STATUSLED_GRN_OFF;
         }
         else
         {
-          /* Green/Yellow pulsing to show that gps is good but temp isn't */
+          /* Green/Yellow pulsing: gps is good but something isn't */
           STATUSLED_RED_ON;
           STATUSLED_GRN_ON;
         }
       }
       else
       {
-        /* Green/Red pulsing to show that we had a fix but it's lost */
+        /* Green/Red pulsing: we had a fix but it's lost */
         STATUSLED_RED_ON;
         STATUSLED_GRN_OFF;
       }
@@ -90,7 +92,7 @@ void statusled_proc()
   }
   else if (messages_get_gps_rx_ok() != 0)
   {
-    /* Red/Yellow pulsing to show gps_rx_ok (system_state 3..0), but no fix */
+    /* Red/Yellow pulsing: gps_rx_ok (system_state 3..0), but no fix */
     STATUSLED_RED_ON;
 
     if (statusled_flash == statusled_flash_a)

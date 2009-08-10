@@ -34,16 +34,16 @@
 #define log_state_writewait_data   13   /* Waiting for write finish */
 #define log_state_writecheck_data  14   /* CMD13: Check status */
 
-#define log_state_deselect_idle    16   /* Wind down, end loop, goto idle */
-#define log_state_deselect         17   /* Wind down, end loop, goto 0 */
+#define log_state_datawait         15   /* Temporary state */
+#define log_state_deselect         16   /* Wind down, end loop, goto 0 */
 
 #define log_timeout_max          250    /* Don't hang around */
 #define log_timeout_write_max    4000 
 
 extern uint8_t log_state;
+extern uint8_t log_datawait;
 
-/* To start the loop, simply enfore a tick */
-#define log_start()  log_tick()
+void log_start();
 void log_tick();
 void log_init();
 

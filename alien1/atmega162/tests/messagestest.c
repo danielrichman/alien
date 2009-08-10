@@ -23,6 +23,7 @@
 
 uint8_t radio_state = radio_state_not_txing;
 uint8_t log_state = log_state_reset;  /* messages.c will not call */
+uint8_t sms_mode = sms_mode_null;
 
 void send_char(uint8_t c)
 {
@@ -42,6 +43,11 @@ void radio_send()
 }
 
 void log_tick()
+{
+
+}
+
+void log_start()
 {
 
 }

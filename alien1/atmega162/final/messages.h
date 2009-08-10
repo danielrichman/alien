@@ -61,23 +61,25 @@ typedef struct
 				     * for the 'flags' field */
   uint16_t system_fix_age;          /* How old the fix is, in seconds  */
   temperature_data system_temp;     /* Hexdump this */
-  uint8_t system_state;             /* 7..4 - MCUCSR, 3..0 - gps_rx_ok */
-
+  uint8_t system_state;             /* 7 - MCUCSR-WDT, 6 - log_ok, 
+                                       3..0 - gps_rx_ok */
   uint8_t message_send_field;       /* These help out the message.c */
   uint8_t message_send_fstate;      /* get_char routines */
   uint8_t message_send_fsubstate;
   uint8_t message_send_checksum;
 } payload_message;
 
-/* gps_rx_ok will need to be set multiple times. */
 #define messages_clear_gps_rx_ok()  latest_data.system_state &= ~(0x0F)
 #define messages_set_gps_rx_ok(val)                                 \
                                     latest_data.system_state |= (0x0F & (val))
 #define messages_get_gps_rx_ok()   (latest_data.system_state & 0x0F)
 
-/* This will only need to be set once. when it is set, latest_data will be 0 
- * (so no need to OR) */
-#define messages_set_mcucsr(val)    latest_data.system_state = (val) << 4
+#define messages_set_log_ok()       latest_data.system_state |=  (0x40)
+#define messages_clear_log_ok()     latest_data.system_state &= ~(0x40)
+#define messages_get_log_ok()      (latest_data.system_state & 0x40)
+
+#define messages_set_mcucsr_wdt()   latest_data.system_state |=  (0x80)
+#define messages_clear_mcucsr_wdt() latest_data.system_state &= ~(0x80)
 
 /* Message Buffers; in order of freshness */
 extern payload_message latest_data;  /* Where the next update is built & 

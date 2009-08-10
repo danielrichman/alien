@@ -21,6 +21,7 @@
 
 /* Simulate timer1.c and timer3.c main.c and messages.c and add 
  * debugging hacks */
+#include "../final/hexdump.h"
 #include "../final/temperature.c"
 payload_message latest_data;
 extern uint8_t temperature_flags, temperature_ext_crc, temperature_int_crc;
@@ -56,29 +57,11 @@ ISR (TIMER1_COMPA_vect)
     case temperature_state_requested:
     case temperature_state_waited:
       temperature_retrieve();
-      if (temperature_testtick == 0)
-      {
-        latest_data.system_temp.external_temperature |= 
-                                                 temperature_ubits_toggle_a;
-        latest_data.system_temp.internal_temperature |= 
-                                                 temperature_ubits_toggle_a;
-        temperature_testtick = 1;
-      }
-      else
-      {
-        latest_data.system_temp.external_temperature |= 
-                                                 temperature_ubits_toggle_b;
-        latest_data.system_temp.internal_temperature |= 
-                                                 temperature_ubits_toggle_b;
-        temperature_testtick = 0;
-      }
       break;
   }
 
-  /* Note - this doesn't compensate for little endian */
   send_char_hd( ((uint8_t *) &latest_data.system_temp)[0] );
   send_char_hd( ((uint8_t *) &latest_data.system_temp)[1] );
-  send_char( ' ' );
   send_char_hd( ((uint8_t *) &latest_data.system_temp)[2] );
   send_char_hd( ((uint8_t *) &latest_data.system_temp)[3] );
   send_char( ' ' );

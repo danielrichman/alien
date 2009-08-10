@@ -123,9 +123,8 @@ ISR(SPI_STC_vect)
     }
   #endif
 
-  if (log_state == log_state_deselect_idle ||
-      log_state == log_state_deselect      ||
-      i == sizeof(msg))
+  if (log_state == log_state_datawait ||
+      log_state == log_state_deselect)
   {
     /* Due to whatever reason, The ISR will not set SPDR - it's finished */
     hooked_function();
@@ -234,4 +233,7 @@ uint8_t messages_get_char(payload_message *data)
 
   return c;
 }
+
+/* To keep log.c's bit setting and clearing in system state happy */
+payload_message latest_data;
 

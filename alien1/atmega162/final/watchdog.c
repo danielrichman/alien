@@ -24,8 +24,10 @@ void watchdog_init()
 {
   /* Grab the source of the reset and log it: bits 3..0 in MCUCSR. Place in 
    * bits 7..4 in system_state */
-  messages_set_mcucsr(MCUCSR & ((_BV(WDRF))  | (_BV(BORF)) | 
-                                (_BV(EXTRF)) | (_BV(PORF))));
+  if (MCUCSR & (1 << WDRF))
+  {
+    messages_set_mcucsr_wdt();
+  }
 
   /* Now reset the status register */
   MCUCSR = 0;
