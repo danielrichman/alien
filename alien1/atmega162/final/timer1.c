@@ -124,13 +124,6 @@ ISR (TIMER1_COMPA_vect)
   /* I estimate that the 'safe-window' is about here */
   if (timer1_uart_idle_counter > 15 && timer1_uart_idle_counter < 35)
   {
-    if (want_to_sms && temp_idle)
-    {
-      /* Don't start sending smses while taking temperature! Both SMS and 
-       * temperature use TIMER3! */
-      sms_start();
-    }
-
     if (want_to_temp && sms_idle)
     {
       /* Don't take temperature and while sending a sms! */
@@ -142,6 +135,13 @@ ISR (TIMER1_COMPA_vect)
       {
         temperature_retrieve();
       }
+    }
+
+    if (want_to_sms && temp_idle)
+    {
+      /* Don't start sending smses while taking temperature! Both SMS and 
+       * temperature use TIMER3! */
+      sms_start();
     }
   }
 }
