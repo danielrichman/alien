@@ -102,7 +102,6 @@ ISR (TIMER1_COMPA_vect)
         /* Every five minutes ... */
         timer1_minute_counter   = 0;
 
-        sms_data = latest_data;
         sms_mode = sms_mode_rts;
       }
     }
@@ -158,5 +157,10 @@ void timer1_init()
    * TCCRnB:    Prescaler to FCPU/256 & Enable  (Set bit CSn2)   */
   TCCR1B  = ((1 << WGM12) | (1 << CS12));
   TIMSK   =  (1 << OCIE1A);
+
+  /* Temperature and SMS will be triggered at/every 1 minute and 5 minutes,
+   * respectivly. We'd like to also do it at 0 minutes. */
+  temperature_state = temperature_state_want_to_get;
+  sms_mode = sms_mode_rts;
 }
 
