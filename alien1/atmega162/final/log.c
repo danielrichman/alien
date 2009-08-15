@@ -33,9 +33,7 @@ uint32_t log_position, log_position_b;
 
 /* Response should be:  0x01, 0x00, 0x00, 0x01, 0xAA */
 /*                       ack, fill, fill, echo, echo */
-#define log_cmd8_expected_response_length 5
-uint8_t log_cmd8_expected_response[log_cmd8_expected_response_length] = 
-                                         { 0x01, 0x00, 0x00, 0x01, 0xAA };
+uint8_t log_cmd8_expected_response[5] = { 0x01, 0x00, 0x00, 0x01, 0xAA };
 
 #define SS       PB4     /* Master Output */
 #define MOSI     PB5     /* Master Output */
@@ -179,7 +177,7 @@ void log_tick()
         {
           log_substate++;
 
-          if (log_substate == log_cmd8_expected_response_length)
+          if (log_substate == sizeof(log_cmd8_expected_response))
           {
             /* Success! */
             log_state++;
