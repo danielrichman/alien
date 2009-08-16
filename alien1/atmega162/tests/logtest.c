@@ -35,13 +35,11 @@ extern uint16_t log_timeout;
 extern uint32_t log_position, log_position_b;
 
 /* From Radio Test */
-uint8_t msg[] = {'H', 'e', 'l', 'l', 'o',  ' ', 'W', 'o', 'r', 'l', 'd', ':',
-                 'a', 'b', 'c', 'd', 'e',  'f', 'g', 'h', 'i', 'j', 'k', 'l', 
-                 'm', 'n', 'o', 'p', 'q',  'r', 's', 't', 'u', 'v', 'w', 'x', 
-                 'y', 'z', 'A', 'B', 'C',  'D', 'E', 'F', 'G', 'H', 'I', 'J', 
-                 'K', 'L', 'M', 'N', 'O',  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 
-                 'W', 'X', 'Y', 'Z', '-', '0', '1', '2', '3', '4', '5', '6', 
-                 '7', '8', '9', '\n' };
+uint8_t msg[] = "Hello World "
+                "abcdefghijklmnopqrstuvwxyz "
+                "ABCDEFGHIJKLMNOPQRSTUV "
+                "012456789 "
+                "\n";
 uint8_t i, j;
 
 #ifndef LOGTEST_DEBUG
@@ -123,28 +121,31 @@ ISR(SPI_STC_vect)
     }
   #endif
 
+  #ifndef LOGTEST_DEBUG
+    /* Backup state incase of error, so we know where it failed */
+    t = log_state;
+    b = hooked_SPDR;
+  #endif
+
+  hooked_function();
+
   if (log_state == log_state_datawait ||
       log_state == log_state_deselect)
   {
-    /* Due to whatever reason, The ISR will not set SPDR - it's finished */
-    hooked_function();
-
-    /* So reset and restart */
+    /* Due to whatever reason, The ISR will not set SPDR - it's finished.
+     * So reset and restart */
     #ifdef LOGTEST_DEBUG
-      if (i == sizeof(msg))
+      if (log_state == log_state_datawait)
       {
         /* End of message. Reset message pointer, increase j */
         i = 0;
-        j++;
-
-        /* Continue */
-        log_start();
-        SPDR = hooked_SPDR;
       }
-      else if (j < 30)
+
+      /* Only continue if we've looped less than 30 times */
+      j++;
+
+      if (j < 30)
       {
-        /* End of message, or failure. Only continue if we've 
-         * sent under 30 messages */
         log_start();
         SPDR = hooked_SPDR;
       }
@@ -157,16 +158,11 @@ ISR(SPI_STC_vect)
       }
 
       /* Why has the loop ended? Find out and report it */
-      if (i == sizeof(msg))
+      if (log_state == log_state_datawait)
       {
         /* End of message. Reset message pointer */
         send_char('d');
         i = 0;
-      }
-      else if (log_state == log_state_idle)
-      {
-        /* End of block. */
-        send_char('b');
       }
       else
       {
@@ -183,15 +179,6 @@ ISR(SPI_STC_vect)
   }
   else
   {
-    #ifndef LOGTEST_DEBUG
-      /* Backup state incase of error, so we know where it failed */
-      t = log_state;
-      b = hooked_SPDR;
-    #endif
-
-    /* The ISR will continue looping */
-    hooked_function();
-
     /* Deal with the transmitted character */
     SPDR = hooked_SPDR;
   }
@@ -225,8 +212,6 @@ ISR(SPI_STC_vect)
 uint8_t messages_get_char(payload_message *data)
 {
   uint8_t c;
-
-  if (i == sizeof(msg))   return 0;
 
   c = msg[i];
   i++;

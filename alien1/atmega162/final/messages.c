@@ -28,6 +28,10 @@
 /* NOTE: messages.h has a hardcoded max-length for messages, which must be 
  * kept up to date! */
 
+/* NOTE: messages.c is expected to only use alphanumeric and .,:-$!* chars,
+ * and a newline. The only problem char is the $ which has a different
+ * code in the GSM alphabet (see sms.c) */
+
 /* $$A1,<INCREMENTAL COUNTER ID>,<TIME HH:MM:SS>,<N-LATITUDE DD.DDDDDD>,
  * <E-LONGITUDE DDD.DDDDDD>,<ALTITUDE METERS MMMMM>,<GPS_FIX_AGE_HEXDUMP>,
  * <GPS_SAT_COUNT>,<TEMPERATURE_HEXDUMP>,<MCUCSR,GPS_RX_OK HEXDUMP>

@@ -146,6 +146,13 @@ ISR (USART1_UDRE_vect)
           c = ' ';   /* If it's ended, just add spaces */
         }
 
+        if (c == '$')
+        {
+          /* We only use a few symbols: !,$. - all are the same in ASCII as 
+           * they are in the GSM Alphabet except for $, which instead is 0x02 */
+          c = 0x02;  
+        }
+
         /* sms_tempbits represents how many bits we've already written to
          * the first byte of sms_tempbits. We shift left to align c to the
          * empty space. We can shift left far enough as it's been cast to 

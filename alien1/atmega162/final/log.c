@@ -52,6 +52,7 @@ uint8_t log_cmd8_expected_response[5] = { 0x01, 0x00, 0x00, 0x01, 0xAA };
 
 #define log_quarter_megabyte_mask 0x0003FFFF
 #define log_quarter_megabyte      0x00040000
+#define log_block_size            512
 
 /* For more information on this, see the SD Card Association's Physical layer 
  * specification, available easily with no registration on their website. */
@@ -264,16 +265,7 @@ void log_tick()
         break;
 
       case log_state_readsuper_d:
-        /* 512 Bytes of data... */
-
-        /* The location at which we should start wriitng is a 2 byte
-         * long integer, repeated three times. If there is a half-written
-         * value (ie. it crashed during write), we try to deduce a good value:
-         *  - If the first and second are (atleast) the same, use that
-         *  - If the last two are the same then use that value (ie. first is
-              corrupted) 
-         *  - Otherwise: If none are the same, use the first (ie. second is
-              corrupted) */
+        /* Here's the superblock data... */
 
         /* (value % 4) is the same as (value & 0x03) 
          * This represents the byte in log_position that is being considered,
@@ -283,9 +275,10 @@ void log_tick()
         #define log_position_b_byte                 \
                      (ba(log_position_b)[log_position_substate & 0x03])
 
-        /* Since we're dealing with 512 bytes we need a 16bit int to keep 
-         * track of log_substate. Rather than make the rest of the code
-         * use 16 bits (inefficient when it's only needed here and write)
+        /* Since we're dealing with more than 255 bytes we need a 16bit int 
+         * to keep track of what would otherwise be log_substate. 
+         * Rather than make the rest of the code use 16 bits 
+         * (inefficient when it's only needed here and when writing)
          * we'll rename log_timeout with a #define and use that */
         #define log_position_substate log_timeout
 
@@ -320,15 +313,16 @@ void log_tick()
           }
         }
 
-        SPDR = 0xFF;
-
         log_position_substate++;
-        if (log_position_substate == 512 + 2)  /* Two CRCs, ignored */
+
+        /* +2 is the two CRCs, ignored */
+        if (log_position_substate == log_block_size + 2)
         {
           /* By now, all tests have completed, time to get the right value. 
-           * If log_substate == 1 then use the second. Otherwise, use the
-           * first. If we're using the first it is already in the right 
-           * place. Using the second we must move position_b to position... */
+           *   log_substate == 0 (first == second), use first.
+           *   log_substate == 1 (second == third), use second.
+           *   log_substate == 2 (none are equal),  use first.
+           * If we're using the first it is already in the right place */
 
           if (log_substate == 1)
           {
@@ -336,15 +330,11 @@ void log_tick()
           }
 
           /* Check that it's a valid quarter-megabyte, and != 0 */
-          if (log_position & log_quarter_megabyte_mask || log_position == 0)
+          if (log_position & log_quarter_megabyte_mask)
           {
-            /* It's bad. Use the default. */
-            log_position  = log_quarter_megabyte;
-          }
-          else
-          {
-            /* It's ok; move onto the next quarter megabyte to write */
-            log_position += log_quarter_megabyte;
+            /* It's bad. Use the default. (Start at 0; Code below will 
+             * ensure that data is not written over the superblock) */
+            log_position = 0;
           }
 
           /* Success */
@@ -357,6 +347,7 @@ void log_tick()
         else
         {
           /* Else: Don't run on to idle... */
+          SPDR = 0xFF;
           break;
         }
 
@@ -376,21 +367,33 @@ void log_tick()
         if ((log_position & log_quarter_megabyte_mask) || 
             (log_state == log_state_write_data))
         {
-          /* Unpack log_command, solving endianness. This 
+          /* Unpack to log_command, solving endianness. This 
            * actually produces very nice assembly with -O2,
-           * gcc optimises it to 4 loads and 4 saves. */
+           * gcc optimises it the 4 loads and 4 saves you'd expect */
           log_command[1] = (log_position & 0xFF000000) >> 24;
           log_command[2] = (log_position & 0x00FF0000) >> 16;
           log_command[3] = (log_position & 0x0000FF00) >> 8;
           log_command[4] = (log_position & 0x000000FF); 
 
           log_state = log_state_writing_data;
-          log_position += 512;
+          log_position += log_block_size;
         }
         else
         {
           /* Update the superblock - write block 0 */
           log_state = log_state_writing_super;
+
+          /* The superblock contains the address to start writing at.
+           * We're starting this quarter-megabyte. If we crash we want
+           * to start writing at the next quarter-meg, since this one
+           * will be partially written. */
+          log_position_b = log_position + log_quarter_megabyte;
+
+          /* Prepare for next time round: don't write data over block 0 */
+          if (log_position == 0)
+          {
+            log_position = log_block_size;
+          }
         }
 
         SPDR = 0xFF;
@@ -419,7 +422,7 @@ void log_tick()
         else
         {
           /* Just like when we were reading the superblock, we need a 16 bit 
-           * integer to represent the count of 512 bytes that we are writing.
+           * integer to represent the count of bytes that we are writing.
            * To save .text and .bss space, we repurpose log_timeout. */
           #define log_writing_substate  log_timeout
 
@@ -427,12 +430,13 @@ void log_tick()
           {
             if (log_writing_substate < 12)
             {
-              /* Minus one, modulo 4 to repeat 4 bytes 3 times 
-               * Doing & 0x03 is the same as % 4, just faster */
-              SPDR = ba(log_position)[ (log_writing_substate) & 0x03 ];
+              /* log_position_b will have been prepared with the value to 
+               * write. (value & 0x03) == (value % 4), but & is faster */
+              SPDR = ba(log_position_b)[ (log_writing_substate) & 0x03 ];
             }
             else
             {
+              /* Stuff bytes */
               SPDR = 0x00;
             }
 
@@ -441,7 +445,7 @@ void log_tick()
           else
           {
             /* writing_data */
-            if (log_writing_substate < 512)
+            if (log_writing_substate < log_block_size)
             {
               m = messages_get_char(&log_data);
 
@@ -462,13 +466,13 @@ void log_tick()
             else
             {
               /* Two ignored CRCs */
-              SPDR = 0xFF;
+              SPDR = 0x00;
               log_writing_substate++; 
             }
           }
 
-          /* 512 + 2: 512 bytes and 2 crcs */
-          if (log_writing_substate == 512 + 2)
+          /* +2: 2 crcs, ignored */
+          if (log_writing_substate == log_block_size + 2)
           {
             /* Next: Wait for data_response token */
             log_mode = log_mode_waiting;
