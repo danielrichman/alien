@@ -41,203 +41,181 @@
 payload_message latest_data, log_data, radio_data, sms_data;
 
 /* payload_message.message_send_field */
-#define message_send_field_header      0
-#define message_send_field_inccnt      1
-#define message_send_field_gpstime     2
-#define message_send_field_gpslat      3
-#define message_send_field_gpslon      4
-#define message_send_field_gpsalt      5   /* Ukhas protocol finishes here */
-#define message_send_field_gpsfixage   6
-#define message_send_field_gpssatc     7
-#define message_send_field_temperature 8
-#define message_send_field_state       9
-#define message_send_field_checksum    10
-#define message_send_field_nl          11
-#define message_send_field_end         12
-
-/* payload_message.message_send_fstate */
-#define message_send_fstate_gpstime_hh      0
-#define message_send_fstate_gpstime_mm      1
-#define message_send_fstate_gpstime_ss      2
-#define message_send_fstate_gpslat_sign     0
-#define message_send_fstate_gpslat_d        1
-#define message_send_fstate_gpslat_p        2
-#define message_send_fstate_gpslon_sign     0
-#define message_send_fstate_gpslon_d        1
-#define message_send_fstate_gpslon_p        2
+#define message_send_field_flagstart_a 0
+#define message_send_field_flagstart_b 1
+#define message_send_field_header      2
+#define message_send_field_inccnt      3
+#define message_send_field_gpstime_hh  4
+#define message_send_field_gpstime_mm  5
+#define message_send_field_gpstime_ss  6
+#define message_send_field_gpslat_sign 7
+#define message_send_field_gpslat_d    8
+#define message_send_field_gpslat_p    9
+#define message_send_field_gpslon_sign 10
+#define message_send_field_gpslon_d    11
+#define message_send_field_gpslon_p    12
+#define message_send_field_gpsalt      13  /* Ukhas protocol finishes here */
+#define message_send_field_gpsfixage   14
+#define message_send_field_gpssatc     15
+#define message_send_field_temperature 16 
+#define message_send_field_state       17
+#define message_send_field_checksum    18
+#define message_send_field_nl          19
+#define message_send_field_end         20
 
 /* fcname: flight computer name, name of our balloon */
-uint8_t message_header[4] = { '$', '$', 'A', '1' };
+uint8_t message_header[2] = { 'A', '1' };
 
-/* powten: look up table for 10 to the power n */
-uint16_t powten[5] = { 1, 10, 100, 1000, 10000 };
+/* powten: look up table for reverse powers of 10 */
+uint16_t powten[5] = { 10000, 1000, 100, 10, 1 };
+
+/* Scopy: Simple copy. */
 
 /* Raw scopy */
-#define   scopys(source, len, type)   scopy_len  = len;                   \
-                                      scopy_src  = source;                \
-                                      scopy_type = type;
+#define   scopyr(source, length, type)                                    \
+        (scopy_src = (source), scopy_length = (length), scopy_type = (type))
 
 /* Derivatives */
-#define scopysba(source, len, type)  scopys(ba(source), len, type)
-
-#define    scopy(source, type)       scopys(   source,  sizeof(source), type)
-#define  scopyba(source, type)       scopys(ba(source), sizeof(source), type)
+#define    scopy(source)                                                  \
+              scopyr(   source,  sizeof(source),     scopy_type_rawcopy)
+#define   scopys(source, length)                                          \
+              scopyr(   source,  length,             scopy_type_rawcopy)
+#define  scopyhd(source)                                                  \
+              scopyr(ba(source), sizeof(source) * 2, scopy_type_hexdump)
 
 /* scopy types */
 #define scopy_type_null        0x00
-#define scopy_type_field       0x01
-#define scopy_type_fstate      0x02
-#define scopy_type_hexdump     0x04
+#define scopy_type_rawcopy     0x01
+#define scopy_type_hexdump     0x02
 
 /* Gets the next character to send */
 uint8_t messages_get_char(payload_message *data)
 {
-  uint8_t c;       /* Char to return */
-  uint8_t t;       /* Another Temporary Variable */
-  div_t divbuf;    /* Temporary divide result storage */
+  uint8_t c;               /* Char to return */
+  uint8_t i, j, k, l, t;   /* Temporary Variables */
+  div_t divbuf;            /* Temporary divide result storage */
+  uint8_t field_delim;
 
   /* scopy enabling values */
-  uint8_t scopy_len, scopy_type, scopy_delim;
   uint8_t *scopy_src;
+  uint8_t  scopy_length;
+  uint8_t  scopy_type;
 
   /* Initialise to false */
   c = 0;
-  scopy_type  = 0;
-  scopy_delim = 1;
+  scopy_type = 0;
+
+  /* By default each field is separated by a comma */
+  field_delim = ',';
 
   switch (data->message_send_field)
   {
+    case message_send_field_flagstart_a:
+    case message_send_field_flagstart_b:
+      c = '$';
+      data->message_send_field++;
+      break;
+
     case message_send_field_header:
-      scopy(message_header, scopy_type_field)
+      scopy(message_header);
       break;
 
     case message_send_field_inccnt:
       /* Modified integer to ascii follows */
-      if (data->message_send_fstate == 0)
-      {
-        data->message_send_fsubstate = 4;
-        data->message_send_fstate    = 1;
-      }
 
-      if (data->message_send_fstate == 2)
+      if (data->message_send_fsubstate == 5)
       {
-        c = ',';
+        c = field_delim;
         data->message_send_field++;
-        data->message_send_fstate = 0;
         data->message_send_fsubstate = 0;
-        break;
-      }
-
-      /* Time for some magic. Divide 10^n into message_id *
-       * gets stored in message_id */
-      divbuf = udiv(data->message_id, powten[data->message_send_fsubstate]);
-
-      /* Quotient is the current digit:
-       * Start at '0' and count up to '1' ... */
-      c = '0' + divbuf.quot;
-
-      /* Remainder gets stored in message_id for the next pass */
-      data->message_id = divbuf.rem;
-
-      /* Move onto a lesser digit */
-      if (data->message_send_fsubstate == 0)
-      {
-        /* Flag it as finished, need to send comma and move on */
-        data->message_send_fstate = 2;
       }
       else
       {
-        data->message_send_fsubstate--;
+        /* Time for some magic. Divide 10^n into message_id *
+         * gets stored in message_id */
+        divbuf = udiv(data->message_id, powten[data->message_send_fsubstate]);
+
+        /* Quotient is the current digit:
+         * Start at '0' and count up to '1' ... */
+        c = '0' + divbuf.quot;
+
+        /* Remainder gets stored in message_id for the next pass */
+        data->message_id = divbuf.rem;
+
+        /* Move onto a lesser digit (powten counts powers down) */
+        data->message_send_fsubstate++;
       }
 
       break;
 
-    case message_send_field_gpstime:
-      switch (data->message_send_fstate)
-      {
-        case message_send_fstate_gpstime_hh:
-          scopys(    data->system_location.time     , 2, scopy_type_fstate)
-          scopy_delim = ':';
-          break;
-        case message_send_fstate_gpstime_mm:
-          scopys( &((data->system_location.time)[2]), 2, scopy_type_fstate)
-          scopy_delim = ':';
-          break;
-        case message_send_fstate_gpstime_ss:
-          scopys( &((data->system_location.time)[4]), 2, scopy_type_field)
-          break;
-      }
-
+    case message_send_field_gpstime_hh:
+      scopys(data->system_location.time    , 2);
+      field_delim = ':';
       break;
 
-    case message_send_field_gpslat:
-      switch (data->message_send_fstate)
-      {
-        case message_send_fstate_gpslat_sign:
-          if (data->system_location.flags & gps_cflag_south)
-          {
-            c = '-';   /* Negative sign for southern latitude */
-            data->message_send_fstate++;
-            break;
-          }
-
-          /* Otherwise, move onto the next one */
-          data->message_send_fstate++;
-          /* no break - move straight on */
-
-        case message_send_fstate_gpslat_d:
-          scopy(data->system_location.lat_d, scopy_type_fstate)
-          scopy_delim = '.';
-          break;
-
-        case message_send_fstate_gpslat_p:
-          scopy(data->system_location.lat_p, scopy_type_field)
-          break;
-      }
+    case message_send_field_gpstime_mm:
+      scopys(data->system_location.time + 2, 2);
+      field_delim = ':';
       break;
 
-    case message_send_field_gpslon:
-      switch (data->message_send_fstate)
+    case message_send_field_gpstime_ss:
+      scopys(data->system_location.time + 4, 2);
+      break;
+
+    case message_send_field_gpslat_sign:
+      /* Whatever happens, we'll be moving onto the next field */
+      data->message_send_field++;
+
+      if (data->system_location.flags & gps_cflag_south)
       {
-        case message_send_fstate_gpslon_sign:
-          if (data->system_location.flags & gps_cflag_west)
-          {
-            c = '-';   /* Negative sign for western longitude */
-            data->message_send_fstate++;
-            break;
-          }
-
-          /* Otherwise, move onto the next one */
-          data->message_send_fstate++;
-          /* no break - move straight on */
-
-        case message_send_fstate_gpslon_d:
-          scopy(data->system_location.lon_d, scopy_type_fstate)
-          scopy_delim = '.';
-          break;
-
-        case message_send_fstate_gpslon_p:
-          scopy(data->system_location.lon_p, scopy_type_field)
-          break;
+         c = '-';   /* Negative sign for southern latitude */
+         break;
       }
+
+      /* Otherwise, fall through to the next field: no break */
+
+    case message_send_field_gpslat_d:
+      scopy(data->system_location.lat_d);
+      field_delim = '.';
+      break;
+
+    case message_send_field_gpslat_p:
+      scopy(data->system_location.lat_p);
+      break;
+
+    case message_send_field_gpslon_sign:
+      data->message_send_fsubstate++;
+
+      if (data->system_location.flags & gps_cflag_west)
+      {
+        c = '-';
+        break;
+      }
+
+    case message_send_field_gpslon_d:
+      scopy(data->system_location.lon_d);
+      field_delim = '.';
+      break;
+
+    case message_send_field_gpslon_p:
+      scopy(data->system_location.lon_p);
       break;
 
     case message_send_field_gpsalt:
-      scopy(data->system_location.alt, scopy_type_field)
+      scopy(data->system_location.alt);
       break;
 
     case message_send_field_gpsfixage:
       /* Compensate for the endian-ness */
-      if (data->message_send_fsubstate == 2)
+      if (data->message_send_fsubstate == 4)
       {
-        c = ',';
+        c = field_delim;
         data->message_send_field++;
-        data->message_send_fstate = 0;
         data->message_send_fsubstate = 0;
       }
       else
       {
-        if (data->message_send_fsubstate == 0)
+        if (data->message_send_fsubstate < 2)
         {
           t = (data->system_fix_age & 0xFF00) >> 8;
         }
@@ -246,54 +224,49 @@ uint8_t messages_get_char(payload_message *data)
           t =  data->system_fix_age & 0x00FF;
         }
 
-        if (data->message_send_fstate == 0)
+        /* Is it even or odd? if bit 1 is clear it is even */
+        if (!(data->message_send_fsubstate & 0x01))
         {
-          c =  last_four(t);
-          data->message_send_fstate = 1;
+          i =  last_four(t);
         }
         else
         {
-          c = first_four(t);
-          data->message_send_fstate = 0;
-          data->message_send_fsubstate++;
+          i = first_four(t);
         }
 
-        c = num_to_char(c);
+        c = num_to_char(i);
+        data->message_send_fsubstate++;
       }
+
       break;
 
     case message_send_field_gpssatc:
-      scopy(data->system_location.satc, scopy_type_field)
+      scopy(data->system_location.satc);
       break;
 
     case message_send_field_temperature:
-      scopyba(data->system_temp, scopy_type_hexdump)
+      scopyhd(data->system_temp);
       break;
 
     case message_send_field_state:
-      scopyba(data->system_state, scopy_type_hexdump)
+      scopyhd(data->system_state);
+      field_delim = '*';   /* Checksum starts with a '*' */
       break;
 
     case message_send_field_checksum:
-      switch (data->message_send_fstate)
+      if (data->message_send_fsubstate == 0)
       {
-        case 0:
-          c = '*';
-          data->message_send_fstate++;
-          break;
-
-        case 1:
-          c = hexdump_a(data->message_send_checksum);
-          data->message_send_fstate++;
-          break;
-
-        case 2:
-          c = hexdump_b(data->message_send_checksum);
-          data->message_send_field++;
-          data->message_send_fstate = 0;
-          break;
+        l =  last_four(data->message_send_checksum);
+	data->message_send_fsubstate++;
+      }
+      else
+      {
+        l = first_four(data->message_send_checksum);
+        data->message_send_field++;
+        data->message_send_fsubstate = 0;
       }
 
+      c = num_to_char(l);
       break;
 
     case message_send_field_nl:
@@ -309,39 +282,32 @@ uint8_t messages_get_char(payload_message *data)
 
   if (scopy_type != scopy_type_null)
   {
-    if (data->message_send_fsubstate == scopy_len) 
+    /* The scopy macro will double scopy_len if it is in hexdump mode */
+    if (data->message_send_fsubstate == scopy_length) 
     {
-      if (scopy_type == scopy_type_fstate)
-      {
-        c = scopy_delim;
-        data->message_send_fstate++;
-      }
-      else
-      {
-        c = ',';
-        data->message_send_field++; 
-        data->message_send_fstate = 0;  
-      }
-
+      c = field_delim;
+      data->message_send_field++;
       data->message_send_fsubstate = 0;
     } 
     else  
     {
       if (scopy_type == scopy_type_hexdump)
       {
-        if (data->message_send_fstate == 0) 
+        /* value & 0x01 is true if value is odd, 
+         * value >> 1 divides by two, discarding remainder */
+        k = scopy_src[data->message_send_fsubstate >> 1];
+
+        if (!(data->message_send_fsubstate & 0x01)) 
         {
-          c =  last_four( scopy_src[data->message_send_fsubstate] ); 
-          data->message_send_fstate = 1;
+          j =  last_four(k); 
         }
         else
         {
-          c = first_four( scopy_src[data->message_send_fsubstate] ); 
-          data->message_send_fstate = 0;
-          data->message_send_fsubstate++;
+          j = first_four(k); 
         }
 
-        c = num_to_char(c); 
+        c = num_to_char(j); 
+        data->message_send_fsubstate++;
       }
       else
       {
@@ -358,9 +324,7 @@ uint8_t messages_get_char(payload_message *data)
     c = '!';
   }
 
-  if (data->message_send_field < message_send_field_checksum &&
-      !(data->message_send_field == message_send_field_header &&
-        data->message_send_fsubstate < 3))
+  if (data->message_send_field < message_send_field_checksum)
   {
     /* If: the current char is before the checksum (we don't wanna check the
      * the * or the checksum itself) AND it's not the first two chars of 
@@ -372,7 +336,6 @@ uint8_t messages_get_char(payload_message *data)
   return c;
 }
 
-#include <avr/io.h>
 /* Called every second, a signal to push the data onwards */
 void messages_push()
 {

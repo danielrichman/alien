@@ -64,7 +64,6 @@ typedef struct
   uint8_t system_state;             /* 7 - MCUCSR-WDT, 6 - log_ok, 
                                        3..0 - gps_rx_ok */
   uint8_t message_send_field;       /* These help out the message.c */
-  uint8_t message_send_fstate;      /* get_char routines */
   uint8_t message_send_fsubstate;
   uint8_t message_send_checksum;
 } payload_message;
