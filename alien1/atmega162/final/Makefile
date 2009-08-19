@@ -40,6 +40,7 @@ $(ANM).elf : $(objects)
 $(ANM).hex : $(ANM).elf
 	$(avr_objcopy) -O ihex $< $@
 	$(avr_size) --common $(objects) $(ANM).elf $(ANM).hex
+	$(avr_size) -C --mcu=$(mmcu) $(ANM).elf
 
 $(ANM).hex.upload : $(ANM).hex
 	$(avrdude) -p $(mmcu) -P /dev/ttyACM0 -c stk500v2 \
