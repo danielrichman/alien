@@ -184,7 +184,7 @@ uint8_t messages_get_char(payload_message *data)
       break;
 
     case message_send_field_gpslon_sign:
-      data->message_send_fsubstate++;
+      data->message_send_field++;
 
       if (data->system_location.flags & gps_cflag_west)
       {
