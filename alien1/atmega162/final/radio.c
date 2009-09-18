@@ -27,8 +27,8 @@
 #define radio_space             0
 #define radio_mark              1
 
-#define radio_no_of_bits        7      /* 7bit ASCII             */
-#define radio_pause_length      25     /* at 50hz, half a second */
+#define radio_no_of_bits        7      /* 7bit ASCII */
+#define radio_pause_length      12     /* "12 bit" pause between msgs */
 
 /* Global Variables */
 uint8_t radio_state, radio_substate, radio_char;
