@@ -20,7 +20,6 @@
 #include <avr/wdt.h>
 #include <stdint.h>
 #include "timer1.h"
-#include "camera.h"
 #include "gps.h"
 #include "messages.h"
 #include "radio.h"
@@ -69,7 +68,6 @@ ISR (TIMER1_COMPA_vect)
     timer1_fifty_counter = 0;
 
     /* Somethings to do each second: */
-    camera_proc();                             /* Take pictures */
     statusled_proc();                          /* Flashy flashy */
     messages_push();                           /* Push Messages */
     latest_data.system_fix_age++;              /* Increment Age */

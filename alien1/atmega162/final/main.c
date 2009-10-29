@@ -18,7 +18,6 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include "main.h"
-#include "camera.h"
 #include "gps.h"
 #include "log.h"
 #include "radio.h"
@@ -30,7 +29,6 @@
 
 int main()
 {
-  camera_init();
   gps_init();
   log_init();
   radio_init();
