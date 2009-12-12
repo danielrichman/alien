@@ -96,7 +96,7 @@ ISR (USART1_UDRE_vect)
       {
         sms_substate = 0;
         sms_state++;
-	sms_wait();
+        sms_wait();
       }
       break;
 
@@ -160,7 +160,7 @@ ISR (USART1_UDRE_vect)
         sms_temp |= c << sms_tempbits;
 
         sms_tempbits += 7;
-	sms_substate++;
+        sms_substate++;
       }
 
       /* Start sending the first byte of sms_temp */

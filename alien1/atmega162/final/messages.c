@@ -257,7 +257,7 @@ uint8_t messages_get_char(payload_message *data)
       if (data->message_send_fsubstate == 0)
       {
         l =  last_four(data->message_send_checksum);
-	data->message_send_fsubstate++;
+        data->message_send_fsubstate++;
       }
       else
       {

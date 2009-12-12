@@ -56,9 +56,9 @@ typedef struct
 typedef struct
 {
   uint16_t message_id;              /* <INCREMENTAL COUNTER ID>
-				     * will rendered into ascii-base10 */
+                                     * will rendered into ascii-base10 */
   gps_information system_location;  /* Is already in ASCII, except 
-				     * for the 'flags' field */
+                                     * for the 'flags' field */
   uint16_t system_fix_age;          /* How old the fix is, in seconds  */
   temperature_data system_temp;     /* Hexdump this */
   uint8_t system_state;             /* 7 - MCUCSR-WDT, 6 - log_ok, 
