@@ -15,6 +15,8 @@
     see <http://www.gnu.org/licenses/>.
 */
 
+/* TODO: Some comments in the way of explaining what is going on here */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -30,7 +32,7 @@ int main(int argc, char **argv)
 
   option_newl   = 1;
   option_help   = 0;
-  option_chkrm  = 0;
+  option_chkrm  = 1;
   options_valid = 1;
 
   if (argc == 2 && argv[1][0] == '-' && argv[1][1] != '\0')
@@ -47,9 +49,9 @@ int main(int argc, char **argv)
       {
         option_help  = 1;
       }
-      else if (argv[1][i] == 'c' && !option_chkrm)
+      else if (argv[1][i] == 'c' && option_chkrm)
       {
-        option_chkrm = 1;
+        option_chkrm = 0;
       }
       else
       {
@@ -80,7 +82,7 @@ int main(int argc, char **argv)
     fprintf(stderr, "Usage: %s [-cnh]\n", argv[0]);
     fprintf(stderr, "     -h  displays this help\n");
     fprintf(stderr, "     -n  checksum the whole file, instead of each line\n");
-    fprintf(stderr, "     -c  enables detection and validation of checksum\n");
+    fprintf(stderr, "     -c  disables detection and validation of checksum\n");
     return 1;
   }
 
