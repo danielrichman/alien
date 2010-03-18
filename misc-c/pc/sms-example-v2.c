@@ -154,6 +154,14 @@ int main(int argc, char **argv)
      * shift it left, past the 8 bits of a char, and thus write to two octets
      * in sms_string at once */
     n = intext[i];
+
+    if (n == '$')
+    {
+      /* We only use a few symbols: !,$.- share the same numeric value in 
+       * ASCII as in the GSM Alphabet, except for $ which instead is 0x02 */
+      n = 0x02;
+    }
+
     n = n << l;    /* Shift it left, align it to the next bits to be written */
 
     /* And now write! */

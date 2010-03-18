@@ -148,8 +148,8 @@ ISR (USART1_UDRE_vect)
 
         if (c == '$')
         {
-          /* We only use a few symbols: !,$. - all are the same in ASCII as 
-           * they are in the GSM Alphabet except for $, which instead is 0x02 */
+          /* We only use a few symbols: !,$.- share the same numeric value in 
+           * ASCII as in the GSM Alphabet, except for $ which instead is 0x02 */
           c = 0x02;  
         }
 

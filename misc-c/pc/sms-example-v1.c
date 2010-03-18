@@ -142,6 +142,13 @@ int main(int argc, char **argv)
       exit(-1);
     }
 
+    if (intext[i] == '$')
+    {
+      /* We only use a few symbols: !,$.- share the same numeric value in 
+       * ASCII as in the GSM Alphabet, except for $ which instead is 0x02 */
+      intext[i] = 0x02;
+    }
+
     for (n = 0; n < 7; n++)                /* For each of the 7 bits... */
     {
       if ( ((unsigned char) intext[i]) & (1 << n) )  /* If it is set... */
