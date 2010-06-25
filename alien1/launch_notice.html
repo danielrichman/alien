@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"> 
+  <head> 
+    <title>ALIEN-1 Launch Announcement</title> 
+  </head> 
+  <body style="font-family: sans-serif;">
+
+<p><i>The following text was emailed around to all of those that we could remember the addresses of, and is preserved here.</i></p>
+
+<p>We are very pleased to announce the expected launch of ALIEN-1 this Sunday 2nd May!</p>
+
+<p>We are a team of three GCSE students from Reading, UK: Simrun Basuita, Alexander Breton and Daniel Richman. With much help from the radio and high altitude balloon (HAB) communities, we have a constructed the ALIEN-1 (ALtitude Imaging Entering Near-space) payload. It will be lifted by a latex meteorological helium balloon to an altitude of ~33km above sea level, taking pictures and temperature measurements along the way before falling back to earth on a parachute. It will transmit its GPS co-ordinates continuously via radio (and SMS after landing) enabling us to track it and recover its stored images and other data.</p>
+
+<p>N.B. We have a lot of links to share, so we're using a reference format: [#] corresponds to an entry in the list at the end.</p>
+
+<p>The launch site is at EARS (East Anglia Rocketry Society) <a href="http://www.ears.org.uk/launches/site/index.shtml">[1]</a>, just outside of Cambridge, UK. The CUSF (Cambridge University Space Flight) balloon trajectory hourly predictor indicates, at the time of writing, that a launch in the morning of Sunday 2nd May is the best for this bank holiday weekend <a href="http://www.srcf.ucam.org/cuspaceflight/hourly-predictions/">[2]</a>. We encourage anybody to come along to the launch on the day (the more the merrier) - we'll publish more exact timing details as plans are refined.</p>
+
+<p>We are keen to keep everybody updated live on the project's progress. Here are some ways you can follow the event:</p>
+
+<ul>
+  <li>Read/subscribe to the blog <a href="http://alienproject.wordpress.com">[3]</a> for nice summaries and write ups, especially after recovery</li>
+  <li>You can follow the balloon's progress with the online tracker map whilst its in the air <a href="http://spacenear.us/tracker">[9]</a></li>
+  <li>
+    Follow @ssb <a href="http://identi.ca/ssb">[5]</a> (Identica) OR @sbasuita <a href="http://twitter.com/sbasuita">[6]</a> (Twitter) for updates throughout the day <br \>
+    (additionally keep an eye on the #alienhab hashtag <a href="http://search.twitter.com/search?q=%23alienhab">[7]</a>)
+  </li>
+  <li>
+    If you have any general questions on ballooning, chat to the growing HAB community on IRC (Internet Relay Chat) <br \>
+    (this is definitely the place to be come Sunday morning; people hang out here whilst tracking - #highaltitude on irc.freenode.net - the easiest way to do this is through the webchat interface <a href="http://webchat.freenode.net/?channels=highaltitude">[4]</a>)
+  </li>
+  <li>Email one of our team members who will answer any project-specific questions (there are far more experienced users hanging out on IRC who can answer more general questions with far more expertise than us)</li>
+</ul>
+
+<p>However, as well as receiving updates, we hope that you will actively join in and help us with tracking and recovery of the payload. Any person with basic amateur radio equipment can receive the telemetry broadcasts, but more importantly can easily upload them to the centralised tracker that has been set up by the UKHAS (UK High Altitude Society). This is a very efficient system that allows us to easily and automatically pool together receivers all over the country. See the UKHAS Tracking Guide <a href="http://ukhas.org.uk/guides:tracking_guide">[8]</a> for information on how to get connected up, and feel free ask on IRC if you have any questions. </p>
+
+<p>In any case, here are the technical downlink specifications:</p>
+
+<ul>
+  <li>434.075 MHz (this will drift at different altitudes due to temperature changes in the electronics)
+  <li>RTTY 7n1 at 50 baud</li>
+  <li>
+    We are using the UKHAS standard format for our telemetry packets, which will look like this: <br />
+    <font face="monospace">$$&lt;Balloon name (A1)&gt;,&lt;Flight computer uptime (secs, decimal) UUUUU&gt;,&lt;GPS time HH:MM:SS&gt;,&lt;Latitude (decimal degrees) DD.DDDDDD&gt;,&lt;Longitude (decimal degrees) DD.DDDDDD&gt;,&lt;Altitude (m) AAAAA&gt;,&lt;GPS fix age (secs, hex) FFFF&gt;,&lt;Satellites locked LL&gt;,&lt;Temperature data (hex) TTTTTTTT&gt;,&lt;Status (45 = all OK)&gt;*&lt;Checksum&gt;</font> <br />
+    <br />
+    For example: <br />
+    <font face="monospace">$$A1,00615,18:01:17,50.123456,-000.567890,00093,0000,04,3F404000,45*33</font>
+  </li>
+</ul>
+
+<p>One of the main reasons for the sending of this email is that, over the time we've spent preparing for this project, it has been mentioned and discussed with many people who wouldn't otherwise have had the chance to see the finished result. You can probably tell we're really excited about getting this project in the air; hopefully come Sunday all will go to plan and we'll get some beautiful shots of the Earth's curvature.</p>
+
+<p>P.S. We today learned that the Old Redingensians have granted us a category AA Enterprise Award (this means funding for further launches!) <a href="http://www.oldredingensians.org.uk/pages/awards">[10]</a></p>
+
+<p>
+Regards, <br />
+Simrun Basuita M6SBX &lt;simrunbasuita@googlemail.com&gt; on behalf of <br />
+Alexander Breton &lt;alexander.breton@virgin.net&gt; <br />
+Daniel Richman M6DRX &lt;main@danielrichman.co.uk&gt; <br />
+</p>
+
+<p>
+<a href="http://www.ears.org.uk/launches/site/index.shtml">[1]</a> http://www.ears.org.uk/launches/site/index.shtml <br />
+<a href="http://www.srcf.ucam.org/cuspaceflight/hourly-predictions/">[2]</a> http://www.srcf.ucam.org/cuspaceflight/hourly-predictions/ <br />
+<a href="http://alienproject.wordpress.com">[3]</a> http://alienproject.wordpress.com <br />
+<a href="http://webchat.freenode.net/?channels=highaltitude">[4]</a> http://webchat.freenode.net/?channels=highaltitude <br />
+<a href="http://identi.ca/ssb">[5]</a> http://identi.ca/ssb<br />
+<a href="http://twitter.com/sbasuita">[6]</a> http://twitter.com/sbasuita <br />
+<a href="http://search.twitter.com/search?q=%23alienhab">[7]</a> http://search.twitter.com/search?q=%23alienhab <br />
+<a href="http://ukhas.org.uk/guides:tracking_guide">[8]</a> http://ukhas.org.uk/guides:tracking_guide <br />
+<a href="http://spacenear.us/tracker">[9]</a> http://spacenear.us/tracker <br />
+<a href="http://www.oldredingensians.org.uk/pages/awards">[10]</a> http://www.oldredingensians.org.uk/pages/awards <br />
+</p>
+
+  </body>
+</html>

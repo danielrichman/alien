@@ -1,0 +1,105 @@
+The following text was emailed around to all of those that we could 
+remember the addresses of, and is preserved here.
+
+We are very pleased to announce the expected launch of ALIEN-1 this
+Sunday 2nd May!
+
+We are a team of three GCSE students from Reading, UK: Simrun Basuita,
+Alexander Breton and Daniel Richman. With much help from the radio and
+high altitude balloon (HAB) communities, we have a constructed the
+ALIEN-1 (ALtitude Imaging Entering Near-space) payload. It will be
+lifted by a latex meteorological helium balloon to an altitude of ~33km
+above sea level, taking pictures and temperature measurements along the
+way before falling back to earth on a parachute. It will transmit its
+GPS co-ordinates continuously via radio (and SMS after landing) enabling
+us to track it and recover its stored images and other data.
+
+N.B. We have a lot of links to share, so we're using a reference format:
+[#] corresponds to an entry in the list at the end.
+
+The launch site is at EARS (East Anglia Rocketry Society) [1], just
+outside of Cambridge, UK. The CUSF (Cambridge University Space Flight)
+balloon trajectory hourly predictor indicates, at the time of writing,
+that a launch in the morning of Sunday 2nd May is the best for this bank
+holiday weekend [2]. We encourage anybody to come along to the launch on
+the day (the more the merrier) - we'll publish more exact timing details
+as plans are refined.
+
+We are keen to keep everybody updated live on the project's progress.
+Here are some ways you can follow the event:
+
+* Read/subscribe to the blog [3] for nice summaries and write ups,
+especially after recovery
+
+* You can follow the balloon's progress with the online tracker map
+whilst its in the air [9]
+
+* Follow @ssb [5] (Identica) OR @sbasuita [6] (Twitter) for updates
+throughout the day
+  - additionally keep an eye on the #alienhab hashtag [7]
+
+* If you have any general questions on ballooning, chat to the growing
+HAB community on IRC (Internet Relay Chat) - this is definitely the
+place to be come Sunday morning; people hang out here whilst tracking
+- #highaltitude on irc.freenode.net
+- the easiest way to do this is through the webchat interface [4]
+
+* Email one of our team members who will answer any project-specific
+questions (there are far more experienced users hanging out on IRC who
+can answer more general questions with far more expertise than us)
+
+However, as well as receiving updates, we hope that you will actively
+join in and help us with tracking and recovery of the payload. Any
+person with basic amateur radio equipment can receive the telemetry
+broadcasts, but more importantly can easily upload them to the
+centralised tracker that has been set up by the UKHAS (UK High Altitude
+Society). This is a very efficient system that allows us to easily and
+automatically pool together receivers all over the country. See the
+UKHAS Tracking Guide [8] for information on how to get connected up, and
+feel free ask on IRC if you have any questions. 
+
+In any case, here are the technical downlink specifications:
+
+* 434.075 MHz (this will drift at different altitudes due to temperature
+changes in the electronics)
+
+* RTTY 7n1 at 50 baud
+
+* We are using the UKHAS standard format for our telemetry packets,
+which will look like this:
+
+$$<Balloon name (A1)>,<Flight computer uptime (secs, decimal)
+UUUUU>,<GPS time HH:MM:SS>,<Latitude (decimal degrees)
+DD.DDDDDD>,<Longitude (decimal degrees) DD.DDDDDD>,<Altitude (m)
+AAAAA>,<GPS fix age (secs, hex) FFFF>,<Satellites locked
+LL>,<Temperature data (hex) TTTTTTTT>,<Status (45 = all OK)>*<Checksum>
+
+For example:
+$$A1,00615,18:01:17,50.123456,-000.567890,00093,0000,04,3F404000,45*33
+
+One of the main reasons for the sending of this email is that, over the
+time we've spent preparing for this project, it has been mentioned and
+discussed with many people who wouldn't otherwise have had the chance to
+see the finished result. You can probably tell we're really excited
+about getting this project in the air; hopefully come Sunday all will go
+to plan and we'll get some beautiful shots of the Earth's curvature.
+
+P.S. We today learned that the Old Redingensians have granted us a
+category AA Enterprise Award (this means funding for further launches!)
+[10]
+
+Regards,
+Simrun Basuita M6SBX <simrunbasuita@googlemail.com> on behalf of
+Alexander Breton <alexander.breton@virgin.net>
+Daniel Richman M6DRX <main@danielrichman.co.uk>
+
+[1] http://www.ears.org.uk/launches/site/index.shtml
+[2] http://www.srcf.ucam.org/cuspaceflight/hourly-predictions/
+[3] http://alienproject.wordpress.com
+[4] http://webchat.freenode.net/?channels=highaltitude
+[5] http://identi.ca/ssb
+[6] http://twitter.com/sbasuita
+[7] http://search.twitter.com/search?q=%23alienhab
+[8] http://ukhas.org.uk/guides:tracking_guide
+[9] http://spacenear.us/tracker
+[10] http://www.oldredingensians.org.uk/pages/awards
