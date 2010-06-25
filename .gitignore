@@ -1,0 +1,10 @@
+*.o
+*.elf
+*.hex
+misc-c/pc/crc7
+misc-c/pc/gensdtestbytes
+misc-c/pc/gps-example
+misc-c/pc/hexdump
+misc-c/pc/nmea-checksum-example
+misc-c/pc/sms-example-v1
+misc-c/pc/sms-example-v2
