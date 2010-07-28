@@ -1,33 +1,34 @@
-"Qty","Value","Device","Farnell Order Code","Parts"
-2,"22R","Resistor 0603",1500608,"R3, R4"
-8,"100R","Resistor 0603",1500583,"R13, R14, R22, R23, R24, R25, R26, R27, R30"
-2,"220R","Resistor 0603",1500609,"R5, R6"
-7,"560R","Resistor 0603",1500642,"R8, R10, R12, R19, R20, R21"
-4,"4K7","Resistor 0603",1500637,"R15, R16, R17, R18"
-7,"10K","Resistor 0603",1500585,"R1, R2, R7, R9, R11, R28, R29"
-4,"22pF","Capacitor 0603",1414622,"C2, C3, C4, C5"
-11,"100nF","Capacitor 0603",1650834,"C10-FSA01, C10-FSA03, C10-VBUS, C10-XM, C10-XM-AVCC, C11-XM, C12-XM, C21-ATUSB, C21-VIN, C22-REGOUT, C40-ATUSB"
-1,"1uF","Capacitor 0603",1650837,"C1"
-5,"10uF","Electrolytic Capacitor 0405",1469324,"C20-REGOUT"
-1,"100uF","Electrolytic Capacitor 0603",8823065,"C39-FSA01, C39-FSA03, C39-VBUS, C39-VIN, C39-XM-AVCC"
-2,"8MHz","Crystal",1611741,"Q1FARNELL1611741, Q2FARNELL1611741"
-1,,"AT90USB162",1455073,"U$1"
-5,,"Ferrite Bead 0603",1515756,"FB-BREAKOUT, FB-FSA03, FB-NIM2, FB-USB, FB-XM-AVCC"
-3,,"Red LED 0805",1226392,"LED1, LED2, LED3"
-2,,"Yellow LED 0805",1226420,"LED4, LED5"
-2,,"Green LED 0805",1226373,"LED6, LED7"
-1,,"PRTR5V0U2X",1524157,"ESD-PROT"
-1,,"SD Card Holder",9186174,"X3"
-2,,"Shottky Diode",1651108,"D1, D2"
-1,,"SMA",1056377,"X2"
-1,,"TC2117-3.3V",1605581,"IC3"
-1,,"USB Connector",1753806,"X1"
-1,,"XMEGA32A4",1748557,"IC1"
-1,,"FSA03","Already Have","FSA03"
-1,,"NIM2","Already Have","U$2"
-2,,"Pin Header 1x11","Maplin","BREAKOUT-1, BREAKOUT-2"
-1,,"Pin Header 1X2","Maplin","POWER"
-1,,"Pin Header 2x3","Maplin","BACKUP-ICSP"
-,,,,
-,"Check dimensions on both electrolytics",,,
-,"Search XMEGA*A4 on Farnell; Some are out of stock",,,
+"Qty","Value","Device","Farnell Order Code"
+2,"22R","Resistor 0603",1500608
+8,"100R","Resistor 0603",1500583
+2,"220R","Resistor 0603",1500609
+7,"560R","Resistor 0603",1500642
+4,"4K7","Resistor 0603",1500637
+7,"10K","Resistor 0603",1500585
+4,"22pF","Capacitor 0603",1414622
+12,"100nF","Capacitor 0603",1650834
+1,"1uF","Capacitor 0603",1650837
+1,"4.7uF","Electrolytic Capacitor 0405",1187021
+5,"10uF","Electrolytic Capacitor 0405",1469324
+1,"100uF","Electrolytic Capacitor 0603",8823065
+2,"8MHz","Crystal",1611741
+1,,"AT90USB162",1455073
+5,,"Ferrite Bead 0603",1515756
+3,,"Red LED 0805",1226392
+2,,"Yellow LED 0805",1226420
+2,,"Green LED 0805",1226373
+1,,"PRTR5V0U2X",1524157
+1,,"SD Card Holder",9186174
+2,,"Shottky Diode",1651108
+1,,"SMA",1248989
+1,,"TC2117-3.3V",1605581
+1,,"USB Connector",1753806
+1,,"XMEGA32A4",1748557
+1,,"FSA03","Already Have"
+1,,"NIM2","Already Have"
+2,,"Pin Header 1x11","Maplin"
+1,,"Pin Header 1X2","Maplin"
+1,,"Pin Header 2x3","Maplin"
+,,,
+,"Check dimensions on all electrolytics!",,
+,"Search XMEGA*A4 on Farnell; Some are out of stock",,
