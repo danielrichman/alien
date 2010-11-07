@@ -1,7 +1,7 @@
-#!/usr/bin/make -f
+#!/usr/bin/make
 # -*- makefile -*-
 
-#    Copyright (C) 2008  Daniel Richman
+#    Copyright (C) 2010  Daniel Richman
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -16,20 +16,24 @@
 #    For a full copy of the GNU General Public License, 
 #    see <http://www.gnu.org/licenses/>.
 
-ANM = alien1
-F_CPU = 16000000
-mmcu = atmega162
+ANM = alien2
+F_CPU = 8000000
+code_mmcu = atxmega32a4
+prog_mmcu = x32a4
+
+cfiles  := $(wildcard */*.c *.c)
+objects := $(patsubst %.c,%.o,$(cfiles))
+headers := $(wildcard */*.h *.h)
 
 avr_gcc = avr-gcc
 avr_objcopy = avr-objcopy
 avr_size = avr-size
 avrdude = avrdude
 
-CFLAGS   = -mmcu=$(mmcu) -DF_CPU=$(F_CPU) -pipe -Wall -pedantic -O2
+CFLAGS = -mmcu=$(code_mmcu) -DF_CPU=$(F_CPU) -funsigned-char
+CFLAGS += -pipe -Wall -pedantic -O2
 
-cfiles  := $(wildcard *.c)
-objects := $(patsubst %.c,%.o,$(cfiles))
-headers := $(wildcard *.h)
+all : $(hexfiles)
 
 %.o : %.c $(headers)
 	$(avr_gcc) -c $(CFLAGS) -o $@ $<
@@ -42,15 +46,14 @@ $(ANM).hex : $(ANM).elf
 	$(avr_size) $(objects) $(ANM).elf $(ANM).hex
 
 $(ANM).hex.upload : $(ANM).hex
-	$(avrdude) -p $(mmcu) -P /dev/ttyACM0 -c stk500v2 \
-	           -U flash:w:$<
+	$(avrdude) -p $(prog_mmcu) -P usb -c avrispmkii -U flash:w:$<
 
 clean : clean-objects
 	rm -f $(ANM).hex
 
-clean-objects: 
+clean-objects:
 	rm -f $(ANM).elf $(objects)
 
-.PHONY : clean clean-objects analyse-memory
+.PHONY : clean clean-objects
 .DEFAULT_GOAL := $(ANM).hex
 

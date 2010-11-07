@@ -17,9 +17,8 @@
 #    see <http://www.gnu.org/licenses/>.
 
 OPT = -O2 -march=native
-PEDANT = -Wall --pedantic
-CFLAGS = $(OPT) $(PEDANT)
-elffiles := $(patsubst %.c,%,$(wildcard *.c))
+CFLAGS = $(OPT) -Wall
+elffiles := $(patsubst %.c,%,$(wildcard *.c tables/*.c))
 
 all : $(elffiles)
 

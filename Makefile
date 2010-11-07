@@ -21,12 +21,14 @@ default :
 	$(MAKE) -C alien1/atmega162/tests 
 	$(MAKE) -C misc-c/arduino-168
 	$(MAKE) -C misc-c/pc
+	$(MAKE) -C alien2/xmegaa4
  
 clean :
 	$(MAKE) -C alien1/atmega162/final clean
 	$(MAKE) -C alien1/atmega162/tests clean
 	$(MAKE) -C misc-c/arduino-168 clean
 	$(MAKE) -C misc-c/pc clean
+	$(MAKE) -C alien2/xmegaa4 clean
 
 .PHONY : clean default
 .DEFAULT_GOAL := default

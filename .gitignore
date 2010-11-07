@@ -1,6 +1,7 @@
 *.o
 *.elf
 *.hex
+*.swp
 misc-c/pc/crc7
 misc-c/pc/gensdtestbytes
 misc-c/pc/gps-example
@@ -8,3 +9,6 @@ misc-c/pc/hexdump
 misc-c/pc/nmea-checksum-example
 misc-c/pc/sms-example-v1
 misc-c/pc/sms-example-v2
+misc-c/pc/tables/domex
+misc-c/pc/tables/morse
+misc-c/pc/tables/hell
