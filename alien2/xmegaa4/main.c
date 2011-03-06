@@ -18,7 +18,9 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 
+#include "leds.h"
 #include "radio/radio.h"
+#include "debug/debug.h"
 
 static void clock_init();
 static void interrupt_enable();
@@ -27,6 +29,7 @@ static void sleep_forever();
 int main()
 {
     clock_init();
+    debug_init();
     radio_init();
     interrupt_enable();
     sleep_forever();
@@ -56,6 +59,8 @@ static void clock_init()
 static void interrupt_enable()
 {
     PMIC.CTRL = PMIC_HILVLEN_bm;
+    PMIC.CTRL = PMIC_MEDLVLEN_bm;
+    PMIC.CTRL = PMIC_LOLVLEN_bm;
     sei();
 }
 

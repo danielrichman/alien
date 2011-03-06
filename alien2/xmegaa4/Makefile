@@ -33,6 +33,10 @@ avrdude = avrdude
 CFLAGS = -mmcu=$(code_mmcu) -DF_CPU=$(F_CPU) -funsigned-char
 CFLAGS += -pipe -Wall -pedantic -O2
 
+ifdef DEBUG
+    CFLAGS += -DDEBUG=$(DEBUG)
+endif
+
 all : $(hexfiles)
 
 %.o : %.c $(headers)
