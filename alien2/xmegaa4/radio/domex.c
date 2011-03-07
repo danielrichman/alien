@@ -52,8 +52,8 @@ static uint16_t current_nibbles;
 
 static void domex_init()
 {
-    radio_hw_set_speed(RADIO_HW_TIMER_DIV8, 46500);
-    radio_hw_set_mode(RADIO_HW_MODE_TX);
+    radio_hw_timer_set(RADIO_HW_TIMER_DIV8, 46500);
+    radio_hw_mode(RADIO_HW_MODE_TX);
 
     /* don't reset current_tone */
     radio_data_update();
@@ -76,7 +76,7 @@ static uint8_t domex_interrupt()
         current_tone -= NUM_TONES;
     }
 
-    radio_hw_set_dac(BASE_VALUE + (current_tone * TONE_SHIFT));
+    radio_hw_dac_set(BASE_VALUE + (current_tone * TONE_SHIFT));
 
     /*
      * domex_get_nibbles returns a 16bit value, 0x0cba where a, b, and c are

@@ -31,7 +31,7 @@ const struct radio_mode uplink = { uplink_init, uplink_interrupt,
 
 static void uplink_init()
 {
-    /* TODO */
+    radio_hw_mode(RADIO_HW_MODE_RX);
 }
 
 static uint8_t uplink_interrupt()

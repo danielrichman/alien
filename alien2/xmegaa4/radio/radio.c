@@ -152,8 +152,8 @@ static void initialise_wait()
 {
     current_item_status = RADIO_INTERRUPT_DELAY;
     radio_current_state = NULL;
-    radio_hw_set_speed(RADIO_HW_TIMER_DIV256, 31250);
-    radio_hw_set_mode(RADIO_HW_MODE_IDLE);
+    radio_hw_timer_set(RADIO_HW_TIMER_DIV256, 31250);
+    radio_hw_mode(RADIO_HW_MODE_IDLE);
 }
 
 #define ASTATUS_HEADER 0

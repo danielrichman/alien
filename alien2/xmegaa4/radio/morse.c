@@ -60,8 +60,8 @@ static uint8_t current_data, current_state;
 static void morse_init()
 {
     /* approx 26WPM */
-    radio_hw_set_speed(RADIO_HW_TIMER_DIV64, 5000);
-    radio_hw_set_mode(RADIO_HW_MODE_IDLE);
+    radio_hw_timer_set(RADIO_HW_TIMER_DIV64, 5000);
+    radio_hw_mode(RADIO_HW_MODE_TXOFF);
 
     radio_data_update();
     current_data = morse_get_data(radio_data_current_byte);
@@ -86,8 +86,8 @@ static uint8_t morse_interrupt()
             }
             else
             {
-                radio_hw_set_dac(MORSE_FREQ);
-                radio_hw_set_mode(RADIO_HW_MODE_TX);
+                radio_hw_dac_set(MORSE_FREQ);
+                radio_hw_mode(RADIO_HW_MODE_TX);
 
                 if (current_data & 0x01)
                 {
@@ -104,7 +104,7 @@ static uint8_t morse_interrupt()
 
         case STATE_STOP:
             /* wait for a dit-length gap, then start again */
-            radio_hw_set_mode(RADIO_HW_MODE_IDLE);
+            radio_hw_mode(RADIO_HW_MODE_TXOFF);
             current_state = STATE_START;
             break;
 

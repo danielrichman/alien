@@ -34,7 +34,7 @@ void debug_init();
 uint8_t debug_write(uint8_t *data, uint16_t len);
 
 /* For static strings */
-#define debug_es(str)  debug_write(str, sizeof(str))
+#define debug_es(str)  debug_write( (uint8_t *) str, sizeof(str))
 
 #else
 

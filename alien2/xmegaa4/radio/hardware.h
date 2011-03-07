@@ -29,15 +29,17 @@
 #define RADIO_HW_TIMER_DIV256  TC_CLKSEL_DIV256_gc
 #define RADIO_HW_TIMER_DIV1024 TC_CLKSEL_DIV1024_gc
 
-#define RADIO_HW_MODE_IDLE 0
+#define RADIO_HW_MODE_IDLE  0
+#define RADIO_HW_MODE_TXOFF 3
 #define RADIO_HW_MODE_RX   (1 << 5)
 #define RADIO_HW_MODE_TX   (1 << 6)
 #define RADIO_HW_MODE_BITS (RADIO_HW_MODE_RX | RADIO_HW_MODE_TX)
 
 void radio_hw_init();
-void radio_hw_set_dac(uint16_t value);
-void radio_hw_set_mode(uint8_t mode);
-void radio_hw_set_speed(uint8_t div, uint16_t per);
+void radio_hw_dac_set(uint16_t value);
+void radio_hw_adc_get(uint16_t *af, uint16_t *rssi);
+void radio_hw_timer_set(uint8_t div, uint16_t per);
+void radio_hw_mode(uint8_t mode);
 void radio_hw_queue_period_update(uint16_t per);
 
 #endif

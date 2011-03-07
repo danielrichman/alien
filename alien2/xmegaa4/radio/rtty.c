@@ -44,8 +44,8 @@ static uint8_t rtty_status;
 
 static void rtty_init()
 {
-    radio_hw_set_mode(RADIO_HW_MODE_TX);
-    radio_hw_set_dac(MARK_VALUE);
+    radio_hw_mode(RADIO_HW_MODE_TX);
+    radio_hw_dac_set(MARK_VALUE);
     rtty_pause();
 
     radio_data_update();
@@ -67,11 +67,11 @@ static uint8_t rtty_interrupt()
     {
         if (radio_current_options == RTTY_SLOW)
         {
-            radio_hw_set_speed(RADIO_HW_TIMER_DIV4, 40000);
+            radio_hw_timer_set(RADIO_HW_TIMER_DIV4, 40000);
         }
         else
         {
-            radio_hw_set_speed(RADIO_HW_TIMER_DIV1, 26667);
+            radio_hw_timer_set(RADIO_HW_TIMER_DIV1, 26667);
         }
 
         bit = MARK;
@@ -101,11 +101,11 @@ static uint8_t rtty_interrupt()
 
     if (bit == SPACE)
     {
-        radio_hw_set_dac(SPACE_VALUE);
+        radio_hw_dac_set(SPACE_VALUE);
     }
     else
     {
-        radio_hw_set_dac(MARK_VALUE);
+        radio_hw_dac_set(MARK_VALUE);
     }
 
     rtty_status++;
@@ -131,7 +131,7 @@ static uint8_t rtty_interrupt()
 
 static void rtty_pause()
 {
-    radio_hw_set_speed(RADIO_HW_TIMER_DIV256, 15625);
+    radio_hw_timer_set(RADIO_HW_TIMER_DIV256, 15625);
 }
 
 static char rtty_slow_short_name[] PROGMEM = "RTTY50";

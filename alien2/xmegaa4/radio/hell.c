@@ -37,8 +37,8 @@ static uint8_t current_bit, current_line, current_line_num;
 
 static void hell_init()
 {
-    radio_hw_set_speed(RADIO_HW_TIMER_DIV2, 32700);
-    radio_hw_set_mode(RADIO_HW_MODE_IDLE);
+    radio_hw_timer_set(RADIO_HW_TIMER_DIV2, 32700);
+    radio_hw_mode(RADIO_HW_MODE_TXOFF);
 
     radio_data_update();
     current_line = helltab_get_data(radio_data_current_byte, 0);
@@ -51,12 +51,12 @@ static uint8_t hell_interrupt()
 {
     if (current_line & (0x80 >> current_bit))
     {
-        radio_hw_set_dac(HELL_FREQ);
-        radio_hw_set_mode(RADIO_HW_MODE_TX);
+        radio_hw_dac_set(HELL_FREQ);
+        radio_hw_mode(RADIO_HW_MODE_TX);
     }
     else
     {
-        radio_hw_set_mode(RADIO_HW_MODE_IDLE);
+        radio_hw_mode(RADIO_HW_MODE_TXOFF);
     }
 
     current_bit++;
