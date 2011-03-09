@@ -71,9 +71,15 @@ void usart_init()
     USARTD1.CTRLC = USART_CHSIZE_8BIT_gc;
     USARTD1.CTRLB = USART_TXEN_bm;
 
-    /* 9600 baud, BSCALE: -6, BSEL: 3269 */
-    USARTD1.BAUDCTRLA = 197;
-    USARTD1.BAUDCTRLB = 172;
+    /*
+     * 9600 baud, BSCALE: -6, BSEL: 3269 
+     * USARTD1.BAUDCTRLA = 197;
+     * USARTD1.BAUDCTRLB = 172;
+     */
+
+    /* 115200 baud, BSCALE: -6, BSEL: 214 */
+    USARTD1.BAUDCTRLA = 214;
+    USARTD1.BAUDCTRLB = 160;
 
     usart_idle = 1;
 }

@@ -40,16 +40,16 @@ struct radio_rotation_item
 };
 
 #define default_source test_source /* Testing */ /* telem_get_byte */
-#define rotation_len 5 /* Testing */ /* 3 */
+#define rotation_len 2 /* Testing */ /* 3 */
 static struct radio_rotation_item rotation[rotation_len] =
-    { { { &domex, default_source, 0 }, 2 },
-      { { &rtty, default_source, 0 }, 1 },
+/*    { { { &domex, default_source, 0 }, 2 }, */
+      { { { &rtty, default_source, 0 }, 1 },
 /* Not yet implemented */
-/*      { { &uplink, NULL, 0 }, 1 }, */
-/* Testing: */
+      { { &uplink, NULL, 0 }, 1 } };
+/* Testing: *
       { { &hell, default_source, 0 }, 1 },
       { { &rtty, default_source, 1 }, 2 },
-      { { &morse, default_source, 0 }, 1 } };
+      { { &morse, default_source, 0 }, 1 } }; */
 
 #define TYPE_NONE     0
 #define TYPE_ROTATION 1

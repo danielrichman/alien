@@ -38,7 +38,8 @@ static void radio_hw_adc_start();
 static void radio_hw_adc_stop();
 static void radio_hw_timer_init();
 
-uint8_t radio_hw_dac_running, radio_hw_adc_running;
+static uint8_t radio_hw_dac_running, radio_hw_adc_running;
+static uint8_t radio_hw_adc_cca_decrement;
 
 ISR (TCC0_OVF_vect)
 {
@@ -95,7 +96,8 @@ static void radio_hw_adc_stop()
 
 void radio_hw_adc_get(uint16_t *af, uint16_t *rssi)
 {
-    /* TODO */
+    *af = RADIO_ADC.CH0.RES;
+    *rssi = RADIO_ADC.CH1.RES;
 }
 
 static void radio_hw_timer_init()
@@ -106,17 +108,22 @@ static void radio_hw_timer_init()
 
 void radio_hw_timer_set(uint8_t div, uint16_t per)
 {
+    /* DIV1 = 1, DIV2 = 2, DIV4 = 3, e.t.c., so this works: */
+    radio_hw_adc_cca_decrement = RADIO_ADC_CAPT_PREEMPT >> (div - 1);
+    if (radio_hw_adc_cca_decrement == 0)
+        radio_hw_adc_cca_decrement = 1;
+
     RADIO_HW_TIMER.CTRLA = 0;
     RADIO_HW_TIMER.CTRLFSET = TC_CMD_RESTART_gc;
     RADIO_HW_TIMER.PER = per;
-    RADIO_HW_TIMER.CCA = per - RADIO_ADC_CAPT_PREEMPT;
+    RADIO_HW_TIMER.CCA = per - radio_hw_adc_cca_decrement;
     RADIO_HW_TIMER.CTRLA = div;
 }
 
 void radio_hw_queue_period_update(uint16_t per)
 {
     RADIO_HW_TIMER.PERBUF = per;
-    RADIO_HW_TIMER.CCABUF = per - RADIO_ADC_CAPT_PREEMPT;
+    RADIO_HW_TIMER.CCABUF = per - radio_hw_adc_cca_decrement;
 }
 
 /*
